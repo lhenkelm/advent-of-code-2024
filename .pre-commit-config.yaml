@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: rustfmt
+        description: Apply the rustfmt style
+        entry: cargo fmt --all -- --color always
+        language: system
+        pass_filenames: false
+      - id: clippy
+        name: clippy
+        description: Check clippy for lints
+        entry: cargo clippy --frozen
+        language: system
+        pass_filenames: false
