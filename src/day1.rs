@@ -2,7 +2,31 @@ use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day1)]
 fn parse_pt1(input: &str) -> (Vec<u32>, Vec<u32>) {
-    (vec![0], vec![0])
+    let mut line_it = input.lines().map(|line: &str| {
+        line.split_whitespace()
+            .map(|token| token.parse::<u32>().expect("expected only numbers and ws"))
+    });
+    // idea: could use likely ascii-only nature of inputs + utf8-len of str
+    // to guess a good initial capacity quickly
+    let mut left_parsed = Vec::new();
+    let mut right_parsed = Vec::new();
+    for parsed_it in line_it {
+        let mut parsed_it = parsed_it;
+        left_parsed.push(
+            parsed_it
+                .next()
+                .expect("expected two numbers per line, got none"),
+        );
+        right_parsed.push(
+            parsed_it
+                .next()
+                .expect("expected two numbers per line, got one"),
+        );
+        if !parsed_it.next().is_none() {
+            panic!("expected two numbers per line, got more")
+        }
+    }
+    (left_parsed, right_parsed)
 }
 
 #[aoc(day1, part1)]
