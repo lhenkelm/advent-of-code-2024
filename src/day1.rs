@@ -2,7 +2,7 @@ use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day1)]
 fn parse_pt1(input: &str) -> (Vec<u32>, Vec<u32>) {
-    let mut line_it = input.lines().map(|line: &str| {
+    let line_it = input.lines().map(|line: &str| {
         line.split_whitespace()
             .map(|token| token.parse::<u32>().expect("expected only numbers and ws"))
     });
