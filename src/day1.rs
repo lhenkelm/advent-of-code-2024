@@ -1,3 +1,5 @@
+use std::iter::zip;
+
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day1)]
@@ -31,7 +33,10 @@ fn parse_pt1(input: &str) -> (Vec<u32>, Vec<u32>) {
 
 #[aoc(day1, part1)]
 fn solve_pt1(left_and_right: &(Vec<u32>, Vec<u32>)) -> u32 {
-    0
+    let (mut left, mut right) = left_and_right.clone();
+    left.sort_unstable();
+    right.sort_unstable();
+    zip(left, right).map(|(l, r)| l.abs_diff(r)).sum::<u32>()
 }
 
 #[cfg(test)]
