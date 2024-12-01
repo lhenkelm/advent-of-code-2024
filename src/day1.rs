@@ -8,10 +8,14 @@ fn parse_pt1(input: &str) -> (Vec<u32>, Vec<u32>) {
         line.split_whitespace()
             .map(|token| token.parse::<u32>().expect("expected only numbers and ws"))
     });
-    // idea: could use likely ascii-only nature of inputs + utf8-len of str
-    // to guess a good initial capacity quickly
-    let mut left_parsed = Vec::new();
-    let mut right_parsed = Vec::new();
+    let estimated_line_no = input.len()
+        / input
+            .lines()
+            .next()
+            .expect("expected at least one line of input")
+            .len();
+    let mut left_parsed = Vec::with_capacity(estimated_line_no);
+    let mut right_parsed = Vec::with_capacity(estimated_line_no);
     for parsed_it in line_it {
         let mut parsed_it = parsed_it;
         left_parsed.push(
