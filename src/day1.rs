@@ -40,20 +40,12 @@ fn solve_pt1(left_and_right: &(Vec<u32>, Vec<u32>)) -> u32 {
 }
 
 fn count_unique(numbers: &[u32]) -> HashMap<u32, u32> {
-    let estimated_unique_numbers = numbers.len() / 2;
+    let estimated_unique_numbers = numbers.len();
     let mut counts = HashMap::with_capacity(estimated_unique_numbers);
     for &number in numbers {
         let count_ref = counts.entry(number).or_insert(0u32);
         *count_ref += 1;
     }
-    let rel_dev =
-        100.0 * (counts.len() as f64 - estimated_unique_numbers as f64) / (counts.len() as f64);
-    println!(
-        "estimated unique numbers: {}, actual: {} ({}% deviation)",
-        estimated_unique_numbers,
-        counts.len(),
-        rel_dev
-    );
     counts
 }
 
