@@ -1,4 +1,4 @@
-use std::iter::zip;
+use std::{collections::HashMap, iter::zip};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
@@ -39,6 +39,36 @@ fn solve_pt1(left_and_right: &(Vec<u32>, Vec<u32>)) -> u32 {
     zip(left, right).map(|(l, r)| l.abs_diff(r)).sum::<u32>()
 }
 
+fn count_unique(numbers: &[u32]) -> HashMap<u32, u32> {
+    let estimated_unique_numbers = numbers.len() / 2;
+    let mut counts = HashMap::with_capacity(estimated_unique_numbers);
+    for &number in numbers {
+        let count_ref = counts.entry(number).or_insert(0u32);
+        *count_ref += 1;
+    }
+    let rel_dev =
+        100.0 * (counts.len() as f64 - estimated_unique_numbers as f64) / (counts.len() as f64);
+    println!(
+        "estimated unique numbers: {}, actual: {} ({}% deviation)",
+        estimated_unique_numbers,
+        counts.len(),
+        rel_dev
+    );
+    counts
+}
+
+#[aoc(day1, part2)]
+fn solve_pt2(left_and_right: &(Vec<u32>, Vec<u32>)) -> u32 {
+    let (left, right) = left_and_right;
+    let left_counts = count_unique(&left);
+    let right_counts = count_unique(&right);
+
+    let mut sim_score = 0u32;
+    for (number, left_freq) in left_counts {
+        sim_score += number * left_freq * right_counts.get(&number).unwrap_or(&0);
+    }
+    sim_score
+}
 #[cfg(test)]
 mod test {
     use super::*;
@@ -70,5 +100,14 @@ mod test {
         let solved = solve_pt1(&left_and_right);
 
         assert_eq!(solved, 11u32);
+    }
+
+    #[test]
+    fn solve_example_pt2() {
+        let left_and_right = (vec![3u32, 4, 2, 1, 3, 3], vec![4u32, 3, 5, 3, 9, 3]);
+
+        let solved = solve_pt2(&left_and_right);
+
+        assert_eq!(solved, 31u32);
     }
 }
