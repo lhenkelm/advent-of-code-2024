@@ -28,9 +28,10 @@ fn parse_pt1(input: &str) -> (Vec<u32>, Vec<u32>) {
                 .next()
                 .expect("expected two numbers per line, got one"),
         );
-        if !parsed_it.next().is_none() {
-            panic!("expected two numbers per line, got more")
-        }
+        debug_assert!(
+            parsed_it.next().is_none(),
+            "expected two numbers per line, got more"
+        );
     }
     (left_parsed, right_parsed)
 }
