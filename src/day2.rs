@@ -12,7 +12,24 @@ fn parse(input: &str) -> Vec<Vec<u64>> {
 }
 
 fn part_1_is_report_safe(report: &[u64]) -> bool {
-    todo!();
+    debug_assert!(report.len() > 1, "got report with less than two readings");
+    let n_pairs = report.len() - 1;
+    let sign = report[1] as i64 - report[0] as i64;
+    for i in 0..n_pairs {
+        let prev = report[i];
+        let next = report[i + 1];
+        if prev == next {
+            return false;
+        }
+        if prev.abs_diff(next) > 3 {
+            return false;
+        };
+        let this_sign = (next as i64 - prev as i64);
+        if this_sign * sign < 0 {
+            return false;
+        }
+    }
+    true
 }
 
 #[aoc(day2, part1)]
