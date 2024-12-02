@@ -62,7 +62,21 @@ fn part_2_is_report_safe(report: &[u64]) -> bool {
                 sign = report[2] as i64 - report[0] as i64
             }
             if !is_level_pair_safe(report[i], report[i + 2], &sign) {
-                return false;
+                have_removed = Some(i);
+                // if we want to try removing the fist level, there is nothing more to check
+                // in this pair
+                if i == 0 {
+                    continue;
+                }
+                // if we are at the first pair, we should not use its sign
+                // to check for trend direction consistency, since we consider it
+                // removed
+                if i == 1 {
+                    sign = report[2] as i64 - report[0] as i64
+                }
+                if !is_level_pair_safe(report[i - 1], report[i + 1], &sign) {
+                    return false;
+                }
             }
         }
     }
