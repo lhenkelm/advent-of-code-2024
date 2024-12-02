@@ -54,45 +54,67 @@ fn part_1_is_report_safe(report: &[u64]) -> bool {
 fn part_2_is_report_safe(report: &[u64]) -> bool {
     debug_assert!(report.len() > 1, "got report with less than two readings");
     let n_pairs = report.len() - 1;
-    let mut sign = report[1] as i64 - report[0] as i64;
     let mut have_removed = None;
     for i in 0..n_pairs {
-        // if we are now at an index that was previously removed, skip it.
-        if have_removed.is_some_and(|r| r == i) {
+        if have_removed.is_some_and(|r| r == i)
+            || is_level_pair_safe_no_sign(report[i], report[i + 1])
+        {
             continue;
         }
-        if !is_level_pair_safe(report[i], report[i + 1], &sign) {
-            if have_removed.is_some() {
-                return false;
-            }
-            if i + 2 == report.len() {
-                return true;
-            }
-            have_removed = Some(i + 1);
-            // if we are at the first pair, we should not use its sign
-            // to check for trend direction consistency, since we consider it
-            // removed
-            if i == 0 {
-                sign = report[2] as i64 - report[0] as i64
-            }
-            if !is_level_pair_safe(report[i], report[i + 2], &sign) {
-                have_removed = Some(i);
-                // if we want to try removing the fist level, there is nothing more to check
-                // in this pair
-                if i == 0 {
-                    continue;
-                }
-                // if we are at the first pair, we should not use its sign
-                // to check for trend direction consistency, since we consider it
-                // removed
-                if i == 1 {
-                    sign = report[2] as i64 - report[0] as i64
-                }
-                if !is_level_pair_safe(report[i - 1], report[i + 1], &sign) {
-                    return false;
-                }
-            }
+        if have_removed.is_some() {
+            return false;
         }
+        if i == report.len() - 2 || is_level_pair_safe_no_sign(report[i], report[i + 2]) {
+            have_removed = Some(i + 1);
+            continue;
+        }
+        if i == 0 || is_level_pair_safe_no_sign(report[i - 1], report[i + 1]) {
+            have_removed = Some(i);
+            continue;
+        }
+        return false;
+    }
+    let mut sign = report[1] as i64 - report[0] as i64;
+    if have_removed.is_some_and(|r| r == 0) {
+        sign = report[2] as i64 - report[1] as i64;
+    } else if have_removed.is_some_and(|r| r == 1) {
+        sign = report[2] as i64 - report[0] as i64;
+    }
+    for i in 0..n_pairs {
+        let next = match have_removed {
+            Some(r) => {
+                if r == i + 1 {
+                    i + 2
+                } else {
+                    i + 1
+                }
+            }
+            None => i + 1,
+        };
+        if next > n_pairs
+            || have_removed.is_some_and(|r| r == i)
+            || does_sign_match(report[i], report[next], &sign)
+        {
+            continue;
+        }
+        if have_removed.is_some() {
+            return false;
+        }
+        debug_assert_eq!(next, i + 1);
+        if i == report.len() - 2 || does_sign_match(report[i], report[next + 1], &sign) {
+            have_removed = Some(i + 1);
+            continue;
+        }
+        if i == 0 || does_sign_match(report[i - 1], report[next], &sign) {
+            have_removed = Some(i);
+            match i {
+                0 => sign = report[2] as i64 - report[1] as i64,
+                1 => sign = report[2] as i64 - report[0] as i64,
+                _ => (),
+            }
+            continue;
+        }
+        return false;
     }
     true
 }
