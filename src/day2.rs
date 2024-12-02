@@ -196,6 +196,23 @@ fn part2_bruter(input: &[Vec<u64>]) -> u64 {
     return safe;
 }
 
+#[aoc(day2, part2, find_the_difference)]
+fn part2_find_the_difference(input: &[Vec<u64>]) -> u64 {
+    println!("let's find the difference");
+    for i in 0..input.len() {
+        let brute = part2_bruter(&input[i..i + 1]);
+        let clever = part2(&input[i..i + 1]);
+        if brute == clever {
+            print!(".");
+            continue;
+        }
+        let inp = &input[i];
+        println!();
+        println!("difference @{i}: brute={brute}, clever={clever}, input={inp:?}")
+    }
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
