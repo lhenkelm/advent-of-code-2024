@@ -168,6 +168,7 @@ fn part2_bruter(input: &[Vec<u64>]) -> u64 {
 #[aoc(day2, part2, find_the_difference)]
 fn part2_find_the_difference(input: &[Vec<u64>]) -> u64 {
     println!("let's find the difference");
+    let mut diffsum = 0u64;
     for i in 0..input.len() {
         let brute = part2_bruter(&input[i..i + 1]);
         let clever = part2(&input[i..i + 1]);
@@ -175,11 +176,12 @@ fn part2_find_the_difference(input: &[Vec<u64>]) -> u64 {
             print!(".");
             continue;
         }
+        diffsum += 1;
         let inp = &input[i];
         println!();
         println!("difference @{i}: brute={brute}, clever={clever}, input={inp:?}")
     }
-    0
+    diffsum
 }
 
 #[cfg(test)]
