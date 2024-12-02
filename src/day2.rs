@@ -55,65 +55,34 @@ fn part_2_is_report_safe(report: &[u64]) -> bool {
     debug_assert!(report.len() > 1, "got report with less than two readings");
     let n_pairs = report.len() - 1;
     let mut have_removed = None;
+    let mut sign = report[1] as i64 - report[0] as i64;
     for i in 0..n_pairs {
         if have_removed.is_some_and(|r| r == i)
-            || is_level_pair_safe_no_sign(report[i], report[i + 1])
+            || is_level_pair_safe(report[i], report[i + 1], &sign)
         {
             continue;
         }
         if have_removed.is_some() {
             return false;
         }
-        if i == report.len() - 2 || is_level_pair_safe_no_sign(report[i], report[i + 2]) {
-            have_removed = Some(i + 1);
-            continue;
+        match i {
+            0 => sign = report[2] as i64 - report[1] as i64,
+            1 => sign = report[2] as i64 - report[0] as i64,
+            _ => sign = report[1] as i64 - report[0] as i64,
         }
-        if i == 0 || is_level_pair_safe_no_sign(report[i - 1], report[i + 1]) {
+        if i == 0 || is_level_pair_safe(report[i - 1], report[i + 1], &sign) {
             have_removed = Some(i);
             continue;
         }
-        return false;
-    }
-    let mut sign = report[1] as i64 - report[0] as i64;
-    if have_removed.is_some_and(|r| r == 0) {
-        sign = report[2] as i64 - report[1] as i64;
-    } else if have_removed.is_some_and(|r| r == 1) {
-        sign = report[2] as i64 - report[0] as i64;
-    }
-    for i in 0..n_pairs {
-        let next = match have_removed {
-            Some(r) => {
-                if r == i + 1 {
-                    i + 2
-                } else {
-                    i + 1
-                }
-            }
-            None => i + 1,
-        };
-        if next > n_pairs
-            || have_removed.is_some_and(|r| r == i)
-            || does_sign_match(report[i], report[next], &sign)
-        {
-            continue;
+        match i + 1 {
+            1 => sign = report[2] as i64 - report[0] as i64,
+            _ => sign = report[1] as i64 - report[0] as i64,
         }
-        if have_removed.is_some() {
-            return false;
-        }
-        debug_assert_eq!(next, i + 1);
-        if i == report.len() - 2 || does_sign_match(report[i], report[next + 1], &sign) {
+        if i == report.len() - 2 || is_level_pair_safe(report[i], report[i + 2], &sign) {
             have_removed = Some(i + 1);
             continue;
         }
-        if i == 0 || does_sign_match(report[i - 1], report[next], &sign) {
-            have_removed = Some(i);
-            match i {
-                0 => sign = report[2] as i64 - report[1] as i64,
-                1 => sign = report[2] as i64 - report[0] as i64,
-                _ => (),
-            }
-            continue;
-        }
+
         return false;
     }
     true
