@@ -11,21 +11,26 @@ fn parse(input: &str) -> Vec<Vec<u64>> {
         .collect()
 }
 
+fn is_level_pair_safe(prev: u64, next: u64, sign: &i64) -> bool {
+    if prev == next {
+        return false;
+    }
+    if prev.abs_diff(next) > 3 {
+        return false;
+    };
+    let this_sign = next as i64 - prev as i64;
+    if this_sign * sign < 0 {
+        return false;
+    }
+    true
+}
+
 fn part_1_is_report_safe(report: &[u64]) -> bool {
     debug_assert!(report.len() > 1, "got report with less than two readings");
     let n_pairs = report.len() - 1;
     let sign = report[1] as i64 - report[0] as i64;
     for i in 0..n_pairs {
-        let prev = report[i];
-        let next = report[i + 1];
-        if prev == next {
-            return false;
-        }
-        if prev.abs_diff(next) > 3 {
-            return false;
-        };
-        let this_sign = next as i64 - prev as i64;
-        if this_sign * sign < 0 {
+        if !is_level_pair_safe(report[i], report[i + 1], &sign) {
             return false;
         }
     }
@@ -37,16 +42,7 @@ fn part_2_is_report_safe(report: &[u64]) -> bool {
     let n_pairs = report.len() - 1;
     let sign = report[1] as i64 - report[0] as i64;
     for i in 0..n_pairs {
-        let prev = report[i];
-        let next = report[i + 1];
-        if prev == next {
-            return false;
-        }
-        if prev.abs_diff(next) > 3 {
-            return false;
-        };
-        let this_sign = next as i64 - prev as i64;
-        if this_sign * sign < 0 {
+        if !is_level_pair_safe(report[i], report[i + 1], &sign) {
             return false;
         }
     }
