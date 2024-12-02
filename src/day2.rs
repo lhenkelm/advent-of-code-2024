@@ -132,6 +132,27 @@ fn part2_brute(input: &[Vec<u64>]) -> u64 {
     return safe;
 }
 
+#[aoc(day2, part2, bruter_force)]
+fn part2_bruter(input: &[Vec<u64>]) -> u64 {
+    let undampened_unsafe: Vec<&Vec<u64>> = input
+        .iter()
+        .filter(|&report| !part_1_is_report_safe(report))
+        .collect();
+    // initialise with already (undampened) safe reports
+    let mut safe = (input.len() - undampened_unsafe.len()) as u64;
+    for unsafe_report in undampened_unsafe.iter() {
+        for i in 0..unsafe_report.len() {
+            let mut dampened = unsafe_report.to_vec();
+            dampened.remove(i);
+            if part_1_is_report_safe(&dampened) {
+                safe += 1;
+                break;
+            }
+        }
+    }
+    return safe;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,5 +297,24 @@ mod tests {
         assert_eq!(part2_brute(&input[4..5]), 1);
         assert_eq!(part2_brute(&input[5..]), 1);
         assert_eq!(part2_brute(&input), 4);
+    }
+
+    #[test]
+    fn part2_bruter_example() {
+        let input = [
+            vec![7u64, 6, 4, 2, 1],
+            vec![1u64, 2, 7, 8, 9],
+            vec![9u64, 7, 6, 2, 1],
+            vec![1u64, 3, 2, 4, 5],
+            vec![8u64, 6, 4, 4, 1],
+            vec![1u64, 3, 6, 7, 9],
+        ];
+        assert_eq!(part2_bruter(&input[..1]), 1);
+        assert_eq!(part2_bruter(&input[1..2]), 0);
+        assert_eq!(part2_bruter(&input[2..3]), 0);
+        assert_eq!(part2_bruter(&input[3..4]), 1);
+        assert_eq!(part2_bruter(&input[4..5]), 1);
+        assert_eq!(part2_bruter(&input[5..]), 1);
+        assert_eq!(part2_bruter(&input), 4);
     }
 }
