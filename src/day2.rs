@@ -13,18 +13,29 @@ fn parse(input: &str) -> Vec<Vec<u64>> {
         .collect()
 }
 
-fn is_level_pair_safe(prev: u64, next: u64, sign: &i64) -> bool {
+fn is_level_pair_safe_no_sign(prev: u64, next: u64) -> bool {
     if prev == next {
         return false;
     }
     if prev.abs_diff(next) > 3 {
         return false;
     };
+    true
+}
+
+fn does_sign_match(prev: u64, next: u64, sign: &i64) -> bool {
     let this_sign = next as i64 - prev as i64;
     if this_sign * sign < 0 {
         return false;
     }
     true
+}
+
+fn is_level_pair_safe(prev: u64, next: u64, sign: &i64) -> bool {
+    if !is_level_pair_safe_no_sign(prev, next) {
+        return false;
+    }
+    does_sign_match(prev, next, sign)
 }
 
 fn part_1_is_report_safe(report: &[u64]) -> bool {
