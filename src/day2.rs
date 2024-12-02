@@ -113,6 +113,11 @@ fn part2(input: &[Vec<u64>]) -> u64 {
         .sum()
 }
 
+// this cleverly uses a hashset to limit the number of re-checks to only
+// index removals that cause a report to become unsafe. Of course, the
+// number of reports is so low that the overhead of building the hashset
+// makes this "clever" solution almost twice as slow as the bruter force one
+// below.
 #[aoc(day2, part2, brute_force)]
 fn part2_brute(input: &[Vec<u64>]) -> u64 {
     let undampened_unsafe: Vec<&Vec<u64>> = input
