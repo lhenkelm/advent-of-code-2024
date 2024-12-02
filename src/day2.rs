@@ -1,7 +1,14 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 #[aoc_generator(day2)]
 fn parse(input: &str) -> Vec<Vec<u64>> {
-    todo!()
+    input
+        .lines()
+        .map(|line| {
+            line.split_whitespace()
+                .map(|token| token.parse::<u64>().expect("only numbers or ws in inputs"))
+                .collect()
+        })
+        .collect()
 }
 
 #[aoc(day2, part1)]
