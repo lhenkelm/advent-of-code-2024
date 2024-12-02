@@ -40,10 +40,30 @@ fn part_1_is_report_safe(report: &[u64]) -> bool {
 fn part_2_is_report_safe(report: &[u64]) -> bool {
     debug_assert!(report.len() > 1, "got report with less than two readings");
     let n_pairs = report.len() - 1;
-    let sign = report[1] as i64 - report[0] as i64;
+    let mut sign = report[1] as i64 - report[0] as i64;
+    let mut have_removed = None;
     for i in 0..n_pairs {
+        // if we are now at an index that was previously removed, skip it.
+        if have_removed.is_some_and(|r| r == i) {
+            continue;
+        }
         if !is_level_pair_safe(report[i], report[i + 1], &sign) {
-            return false;
+            if have_removed.is_some() {
+                return false;
+            }
+            if i + 2 == report.len() {
+                return true;
+            }
+            have_removed = Some(i + 1);
+            // if we are at the first pair, we should not use its sign
+            // to check for trend direction consistency, since we consider it
+            // removed
+            if i == 0 {
+                sign = report[2] as i64 - report[0] as i64
+            }
+            if !is_level_pair_safe(report[i], report[i + 2], &sign) {
+                return false;
+            }
         }
     }
     true
