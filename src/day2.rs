@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use aoc_runner_derive::{aoc, aoc_generator};
 #[aoc_generator(day2)]
 fn parse(input: &str) -> Vec<Vec<u64>> {
@@ -37,6 +39,7 @@ fn part_1_is_report_safe(report: &[u64]) -> bool {
     true
 }
 
+// clever but wrong
 fn part_2_is_report_safe(report: &[u64]) -> bool {
     debug_assert!(report.len() > 1, "got report with less than two readings");
     let n_pairs = report.len() - 1;
@@ -91,12 +94,42 @@ fn part1(input: &[Vec<u64>]) -> u64 {
         .sum()
 }
 
-#[aoc(day2, part2)]
+#[aoc(day2, part2, clever_but_wrong)]
 fn part2(input: &[Vec<u64>]) -> u64 {
     input
         .iter()
         .map(|report| part_2_is_report_safe(report) as u64)
         .sum()
+}
+
+#[aoc(day2, part2, brute_force)]
+fn part2_brute(input: &[Vec<u64>]) -> u64 {
+    let undampened_unsafe: Vec<&Vec<u64>> = input
+        .iter()
+        .filter(|&report| !part_1_is_report_safe(report))
+        .collect();
+    // initialise with already (undampened) safe reports
+    let mut safe = (input.len() - undampened_unsafe.len()) as u64;
+    for unsafe_report in undampened_unsafe.iter() {
+        let n_pairs = unsafe_report.len() - 1;
+        let sign = unsafe_report[0] as i64 - unsafe_report[1] as i64;
+        let mut legal_to_remove = HashSet::new();
+        for i in 0..n_pairs {
+            if !is_level_pair_safe(unsafe_report[i], unsafe_report[i + 1], &sign) {
+                legal_to_remove.insert(i);
+                legal_to_remove.insert(i + 1);
+            }
+        }
+        for i in legal_to_remove {
+            let mut dampened = unsafe_report.to_vec();
+            dampened.remove(i);
+            if part_1_is_report_safe(&dampened) {
+                safe += 1;
+                break;
+            }
+        }
+    }
+    return safe;
 }
 
 #[cfg(test)]
@@ -224,5 +257,24 @@ mod tests {
             vec![1u64, 3, 6, 7, 9],
         ];
         assert_eq!(part2(&input), 4);
+    }
+
+    #[test]
+    fn part2_brute_example() {
+        let input = [
+            vec![7u64, 6, 4, 2, 1],
+            vec![1u64, 2, 7, 8, 9],
+            vec![9u64, 7, 6, 2, 1],
+            vec![1u64, 3, 2, 4, 5],
+            vec![8u64, 6, 4, 4, 1],
+            vec![1u64, 3, 6, 7, 9],
+        ];
+        assert_eq!(part2_brute(&input[..1]), 1);
+        assert_eq!(part2_brute(&input[1..2]), 0);
+        assert_eq!(part2_brute(&input[2..3]), 0);
+        assert_eq!(part2_brute(&input[3..4]), 1);
+        assert_eq!(part2_brute(&input[4..5]), 1);
+        assert_eq!(part2_brute(&input[5..]), 1);
+        assert_eq!(part2_brute(&input), 4);
     }
 }
