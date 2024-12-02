@@ -123,10 +123,15 @@ fn part2_brute(input: &[Vec<u64>]) -> u64 {
     let mut safe = (input.len() - undampened_unsafe.len()) as u64;
     for unsafe_report in undampened_unsafe.iter() {
         let n_pairs = unsafe_report.len() - 1;
-        let sign = unsafe_report[0] as i64 - unsafe_report[1] as i64;
+        // these overlap for len 2. IDGAF.
+        let sign_lo = unsafe_report[1] as i64 - unsafe_report[0] as i64;
+        let sign_hi = unsafe_report[unsafe_report.len() - 1] as i64
+            - unsafe_report[unsafe_report.len() - 2] as i64;
         let mut legal_to_remove = HashSet::new();
         for i in 0..n_pairs {
-            if !is_level_pair_safe(unsafe_report[i], unsafe_report[i + 1], &sign) {
+            if !(is_level_pair_safe(unsafe_report[i], unsafe_report[i + 1], &sign_lo)
+                && is_level_pair_safe(unsafe_report[i], unsafe_report[i + 1], &sign_hi))
+            {
                 legal_to_remove.insert(i);
                 legal_to_remove.insert(i + 1);
             }
