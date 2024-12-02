@@ -152,25 +152,25 @@ mod tests {
     #[test]
     fn part2_example_report2() {
         let report = [1u64, 2, 7, 8, 9];
-        assert!(part_2_is_report_safe(&report));
+        assert!(!part_2_is_report_safe(&report));
     }
 
     #[test]
     fn part2_example_report3() {
         let report = [9u64, 7, 6, 2, 1];
-        assert!(part_2_is_report_safe(&report));
+        assert!(!part_2_is_report_safe(&report));
     }
 
     #[test]
     fn part2_example_report4() {
         let report = [1u64, 3, 2, 4, 5];
-        assert!(!part_2_is_report_safe(&report));
+        assert!(part_2_is_report_safe(&report));
     }
 
     #[test]
     fn part2_example_report5() {
         let report = [8u64, 6, 4, 4, 1];
-        assert!(!part_2_is_report_safe(&report));
+        assert!(part_2_is_report_safe(&report));
     }
 
     #[test]
