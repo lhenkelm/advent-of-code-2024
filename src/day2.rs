@@ -11,9 +11,16 @@ fn parse(input: &str) -> Vec<Vec<u64>> {
         .collect()
 }
 
+fn part_1_is_report_safe(report: &[u64]) -> bool {
+    todo!();
+}
+
 #[aoc(day2, part1)]
 fn part1(input: &[Vec<u64>]) -> u64 {
-    todo!()
+    input
+        .iter()
+        .map(|report| part_1_is_report_safe(report) as u64)
+        .sum()
 }
 
 #[aoc(day2, part2)]
@@ -47,6 +54,42 @@ mod tests {
         ];
 
         assert_eq!(&parse(input), &expected);
+    }
+
+    #[test]
+    fn part1_example_report1() {
+        let report = [7u64, 6, 4, 2, 1];
+        assert!(part_1_is_report_safe(&report));
+    }
+
+    #[test]
+    fn part1_example_report2() {
+        let report = [1u64, 2, 7, 8, 9];
+        assert!(!part_1_is_report_safe(&report));
+    }
+
+    #[test]
+    fn part1_example_report3() {
+        let report = [9u64, 7, 6, 2, 1];
+        assert!(!part_1_is_report_safe(&report));
+    }
+
+    #[test]
+    fn part1_example_report4() {
+        let report = [1u64, 3, 2, 4, 5];
+        assert!(!part_1_is_report_safe(&report));
+    }
+
+    #[test]
+    fn part1_example_report5() {
+        let report = [8u64, 6, 4, 4, 1];
+        assert!(!part_1_is_report_safe(&report));
+    }
+
+    #[test]
+    fn part1_example_report6() {
+        let report = [1u64, 3, 6, 7, 9];
+        assert!(part_1_is_report_safe(&report));
     }
 
     #[test]
