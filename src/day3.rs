@@ -78,7 +78,16 @@ fn parse_pt2(input: &str) -> Vec<Instruction> {
 
 #[aoc(day3, part2)]
 fn part2(input: &[Instruction]) -> u64 {
-    todo!()
+    let mut enabled = true;
+    let mut total = 0;
+    for instruction in input {
+        match instruction {
+            Instruction::Do => enabled = true,
+            Instruction::Dont => enabled = false,
+            Instruction::Mul(l, r) => total += enabled as u64 * l * r,
+        }
+    }
+    total
 }
 
 #[cfg(test)]
