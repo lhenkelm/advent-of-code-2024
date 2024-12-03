@@ -1,7 +1,17 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use regex::Regex;
+
 #[aoc_generator(day3)]
 fn parse(input: &str) -> Vec<(u64, u64)> {
-    todo!()
+    let re = Regex::new(r"mul\((\d+),(\d+)\)").expect("failed to compile regex");
+    re.captures_iter(input)
+        .map(|caps| {
+            caps.extract::<2>()
+                .1
+                .map(|substr| substr.parse::<u64>().expect("expected numbers"))
+        })
+        .map(|arr| (arr[0], arr[1]))
+        .collect()
 }
 
 #[aoc(day3, part1)]
