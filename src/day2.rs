@@ -70,7 +70,7 @@ fn part_2_is_report_safe(report: &[u64]) -> bool {
             1 => sign = report[2] as i64 - report[0] as i64,
             _ => sign = report[1] as i64 - report[0] as i64,
         }
-        if i == 0 || is_level_pair_safe(report[i - 1], report[i + 1], &sign) {
+        if i > 0 && is_level_pair_safe(report[i - 1], report[i + 1], &sign) {
             have_removed = Some(i);
             continue;
         }
@@ -78,7 +78,15 @@ fn part_2_is_report_safe(report: &[u64]) -> bool {
             1 => sign = report[2] as i64 - report[0] as i64,
             _ => sign = report[1] as i64 - report[0] as i64,
         }
-        if i == report.len() - 2 || is_level_pair_safe(report[i], report[i + 2], &sign) {
+        if i < report.len() - 2 && is_level_pair_safe(report[i], report[i + 2], &sign) {
+            have_removed = Some(i + 1);
+            continue;
+        }
+        if i == 0 {
+            have_removed = Some(0);
+            continue;
+        }
+        if i + 1 == report.len() - 1 {
             have_removed = Some(i + 1);
             continue;
         }
