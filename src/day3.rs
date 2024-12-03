@@ -16,7 +16,7 @@ fn parse(input: &str) -> Vec<(u64, u64)> {
 
 #[aoc(day3, part1)]
 fn part1(input: &[(u64, u64)]) -> u64 {
-    todo!()
+    input.iter().map(|(a, b)| a * b).sum()
 }
 
 #[aoc(day3, part2)]
