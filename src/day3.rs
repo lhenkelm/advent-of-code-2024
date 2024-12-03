@@ -32,11 +32,7 @@ enum Instruction {
 
 #[aoc_generator(day3, part2)]
 fn parse_pt2(input: &str) -> Vec<Instruction> {
-    let regexes = [
-        Regex::new(MUL_PATTERN).expect("failed to compile MUL_PATTERN"),
-        Regex::new(DO_PATTERN).expect("failed to compile DO_PATTERN"),
-        Regex::new(DONT_PATTERN).expect("failed to compile DONT_PATTERN"),
-    ];
+    let mul_regex = Regex::new(MUL_PATTERN).expect("failed to compile MUL_PATTERN");
     let regex_set = RegexSet::new([MUL_PATTERN, DO_PATTERN, DONT_PATTERN])
         .expect("patterns in set did not compile");
     let union_pattern = format!("{MUL_PATTERN}|{DO_PATTERN}|{DONT_PATTERN}");
@@ -51,7 +47,7 @@ fn parse_pt2(input: &str) -> Vec<Instruction> {
                 .expect("expected one match, found none");
             match matched_pattern_idx {
                 0 => {
-                    let captures = regexes[0]
+                    let captures = mul_regex
                         .captures(&input[match_.range()])
                         .expect("match should also capture");
                     let l = captures
