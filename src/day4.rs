@@ -44,7 +44,6 @@ fn part1(input: &str) -> u64 {
             if row_idx >= n_rows {
                 break;
             }
-            dbg!((offset, i, row_idx));
             diagonals.push_str(&lines[row_idx][i..i + 1]);
         }
         diagonals.push('\n');
