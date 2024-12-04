@@ -1,5 +1,7 @@
+use std::usize;
+
 use aoc_runner_derive::{aoc, aoc_generator};
-#[aoc_generator(day4)]
+#[aoc_generator(day4, part1)]
 fn parse(input: &str) -> String {
     input.trim().to_string()
 }
@@ -104,9 +106,83 @@ fn part1(input: &str) -> u64 {
     occurances
 }
 
+struct CharMat {
+    n_rows: usize,
+    n_cols: usize,
+    buffer: String,
+}
+
+impl CharMat {
+    fn from_str(source: &str) -> CharMat {
+        let mut lines = source.lines();
+        let line_0 = lines.next().expect("got empty source");
+        let n_cols = line_0.trim().len(); // assumes ASCII, assumes no ws inside lines
+        let n_rows = 1 + lines.count();
+        let res = CharMat {
+            n_rows,
+            n_cols,
+            buffer: source.split_ascii_whitespace().collect(),
+        };
+        assert_eq!(res.n_rows * res.n_cols, res.buffer.len());
+        res
+    }
+
+    fn get(&self, row: usize, col: usize) -> &str {
+        let idx = self.flat_idx(col, row);
+        match idx {
+            // silly default to avoid standard option handling
+            None => "",
+            // assumes ASCII, silly default to avoid standard option handling
+            Some(idx) => &self.buffer.get(idx..idx + 1).unwrap_or(""),
+        }
+    }
+
+    fn flat_idx(&self, row: usize, col: usize) -> Option<usize> {
+        if col >= self.n_cols {
+            return None;
+        }
+        if row >= self.n_rows {
+            return None;
+        }
+        Some(col * self.n_rows + row)
+    }
+
+    fn deep_idx(&self, flat_idx: usize) -> (usize, usize) {
+        assert!(flat_idx < self.buffer.len());
+        let row = flat_idx / self.n_cols;
+        let col = flat_idx % self.n_cols;
+        debug_assert!(row < self.n_rows);
+        (row, col)
+    }
+
+    // clean solution would return iterator with lifetime to avoid alloc
+    fn match_indices(&self, pat: &str) -> Vec<(usize, usize)> {
+        self.buffer
+            .match_indices(pat)
+            .map(|(match_idx, _)| self.deep_idx(match_idx))
+            .collect()
+    }
+}
+
+#[aoc_generator(day4, part2)]
+fn parse_part2(input: &str) -> CharMat {
+    CharMat::from_str(input.trim())
+}
+
 #[aoc(day4, part2)]
-fn part2(input: &str) -> String {
-    String::new()
+fn part2(input: &CharMat) -> u64 {
+    let a_matches = input.match_indices("A");
+    a_matches
+        .iter()
+        .filter(|(r, c)| {
+            r > &0_usize
+                && c > &0_usize
+                && ((input.get(r - 1, c - 1) == "M" && input.get(r + 1, c + 1) == "S")
+                    || (input.get(r - 1, c - 1) == "S" && input.get(r + 1, c + 1) == "M"))
+                && ((input.get(r - 1, c + 1) == "M" && input.get(r + 1, c - 1) == "S")
+                    || (input.get(r - 1, c + 1) == "S" && input.get(r + 1, c - 1) == "M"))
+        })
+        .count() as u64
 }
 
 #[cfg(test)]
@@ -148,6 +224,44 @@ mod tests {
 
     #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
+        assert_eq!(part2(&parse_part2(PART_1_EXAMPLE)), 9);
+    }
+
+    #[test]
+    fn part2_xmas1() {
+        let input = indoc! {"
+            M.M
+            .A.
+            S.S
+        "};
+        assert_eq!(part2(&parse_part2(&input)), 1);
+    }
+    #[test]
+    fn part2_xmas2() {
+        let input = indoc! {"
+            M.S
+            .A.
+            M.S
+        "};
+        assert_eq!(part2(&parse_part2(&input)), 1);
+    }
+
+    #[test]
+    fn part2_xmas3() {
+        let input = indoc! {"
+            S.M
+            .A.
+            S.M
+        "};
+        assert_eq!(part2(&parse_part2(&input)), 1);
+    }
+    #[test]
+    fn part2_xmas4() {
+        let input = indoc! {"
+            S.S
+            .A.
+            M.M
+        "};
+        assert_eq!(part2(&parse_part2(&input)), 1);
     }
 }
