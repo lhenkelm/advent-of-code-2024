@@ -54,7 +54,33 @@ fn part1(input: &str) -> u64 {
     occurances += diagonals.matches(XMAS).count() as u64;
     occurances += diagonals.matches(SAMX).count() as u64;
 
-    // TODO: orthogonals
+    let mut orthogonals = String::with_capacity(input.len() + n_cols);
+    for offset in (0..n_rows).rev() {
+        for i in 0..n_cols {
+            let row_idx = i + offset;
+            if row_idx >= n_rows {
+                break;
+            }
+            let rev_i = n_cols - 1 - i;
+            orthogonals.push_str(&lines[row_idx][rev_i..rev_i + 1]);
+        }
+        orthogonals.push('\n');
+    }
+    for offset in 0..n_rows {
+        for i in 1..n_cols {
+            let col_idx = i + offset;
+            if col_idx >= n_cols {
+                break;
+            }
+            let rev_col_idx = n_cols - 1 - col_idx;
+            orthogonals.push_str(&lines[i][rev_col_idx..rev_col_idx + 1]);
+        }
+        orthogonals.push('\n');
+    }
+    assert_eq!(orthogonals.len(), input.len() + n_cols);
+    let orthogonals = orthogonals;
+    occurances += orthogonals.matches(XMAS).count() as u64;
+    occurances += orthogonals.matches(SAMX).count() as u64;
 
     occurances
 }
