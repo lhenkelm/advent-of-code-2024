@@ -1,7 +1,7 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 #[aoc_generator(day4)]
 fn parse(input: &str) -> String {
-    input.to_string()
+    input.trim().to_string()
 }
 
 const XMAS: &'static str = "XMAS";
@@ -21,7 +21,10 @@ fn part1(input: &str) -> u64 {
         for &line_ in lines.iter() {
             transposed.push_str(&line_[col..col + 1]);
         }
-        transposed.push('\n');
+
+        if col < n_cols - 1 {
+            transposed.push('\n');
+        }
     }
     assert_eq!(transposed.len(), input.len());
     let transposed = transposed;
@@ -47,7 +50,9 @@ fn part1(input: &str) -> u64 {
             }
             diagonals.push_str(&lines[i][col_idx..col_idx + 1]);
         }
-        diagonals.push('\n');
+        if offset < n_rows - 1 {
+            diagonals.push('\n');
+        }
     }
     assert_eq!(diagonals.len(), input.len() + n_cols);
     let diagonals = diagonals;
@@ -75,7 +80,9 @@ fn part1(input: &str) -> u64 {
             let rev_col_idx = n_cols - 1 - col_idx;
             orthogonals.push_str(&lines[i][rev_col_idx..rev_col_idx + 1]);
         }
-        orthogonals.push('\n');
+        if offset < n_rows - 1 {
+            orthogonals.push('\n');
+        }
     }
     assert_eq!(orthogonals.len(), input.len() + n_cols);
     let orthogonals = orthogonals;
