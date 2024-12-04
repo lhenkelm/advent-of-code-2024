@@ -11,3 +11,9 @@ regex = "1.11.1"
 
 [lib]
 bench = false
+name = "aoc2024"
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "aoc24_bin"
