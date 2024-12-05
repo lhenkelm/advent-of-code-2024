@@ -30,19 +30,13 @@ fn parse(input: &str) -> (Vec<(u64, u64)>, Vec<Vec<u64>>) {
     (rules, updates)
 }
 
-fn part_1_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
-    let mut page_position_by_id = HashMap::with_capacity(update.len());
-    for (pos, &id) in update.iter().enumerate() {
-        page_position_by_id.insert(id, pos);
-    }
-    let page_position_by_id = page_position_by_id;
-
+fn check_page_map(page_position_by_id: &HashMap<u64, usize>, rules: &[(u64, u64)]) -> bool {
     for (first_id, second_id) in rules {
-        let first_pos = match page_position_by_id.get(first_id) {
+        let &first_pos = match page_position_by_id.get(first_id) {
             Some(pos) => pos,
             None => continue,
         };
-        let second_pos = match page_position_by_id.get(second_id) {
+        let &second_pos = match page_position_by_id.get(second_id) {
             Some(pos) => pos,
             None => continue,
         };
@@ -54,6 +48,20 @@ fn part_1_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
     true
 }
 
+fn update_to_page_map(update: &[u64]) -> HashMap<u64, usize> {
+    let mut page_position_by_id = HashMap::with_capacity(update.len());
+    for (pos, &id) in update.iter().enumerate() {
+        page_position_by_id.insert(id, pos);
+    }
+    page_position_by_id
+}
+
+fn part_1_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
+    let page_position_by_id = update_to_page_map(update);
+
+    check_page_map(&page_position_by_id, rules)
+}
+
 #[aoc(day5, part1)]
 fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
     updates
@@ -63,9 +71,53 @@ fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
         .sum()
 }
 
+fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
+    let mut page_position_by_id = update_to_page_map(update);
+    loop {
+        if check_page_map(&page_position_by_id, rules) {
+            break;
+        }
+        for (first_id, second_id) in rules {
+            let &first_pos = match page_position_by_id.get(first_id) {
+                Some(pos) => pos,
+                None => continue,
+            };
+            let &second_pos = match page_position_by_id.get(second_id) {
+                Some(pos) => pos,
+                None => continue,
+            };
+
+            if first_pos > second_pos {
+                assert_eq!(
+                    page_position_by_id.insert(*first_id, second_pos),
+                    Some(first_pos)
+                );
+                assert_eq!(
+                    page_position_by_id.insert(*second_id, first_pos),
+                    Some(second_pos)
+                );
+            }
+        }
+    }
+    let mut new_update = vec![0u64; update.len()];
+    for (id, pos) in page_position_by_id {
+        new_update[pos] = id;
+    }
+    new_update
+}
+
 #[aoc(day5, part2)]
 fn part2((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
-    todo!()
+    let mut rules_by_pre = HashMap::with_capacity(rules.len());
+    for (pre, post) in rules {
+        rules_by_pre.entry(pre).or_insert_with(Vec::new).push(post);
+    }
+    updates
+        .iter()
+        .filter(|&update| !part_1_check_update(update, rules))
+        .map(|update| part2_fix_update(update, rules))
+        .map(|update| update[update.len() / 2])
+        .sum()
 }
 #[cfg(test)]
 mod tests {
