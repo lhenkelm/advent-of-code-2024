@@ -63,6 +63,10 @@ fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
         .sum()
 }
 
+#[aoc(day5, part2)]
+fn part2((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
+    todo!()
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,5 +145,11 @@ mod tests {
     fn part1_example() {
         let input = parse(PART_1_EXAMPLE);
         assert_eq!(part1(&input), 143);
+    }
+
+    #[test]
+    fn part2_example() {
+        let input = parse(PART_1_EXAMPLE);
+        assert_eq!(part2(&input), 123);
     }
 }
