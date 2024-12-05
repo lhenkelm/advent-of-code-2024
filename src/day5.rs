@@ -80,6 +80,10 @@ fn part1_sorting((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
 }
 
 fn part_1_sorting_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
+    sort_update(update, rules) == update
+}
+
+fn sort_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
     let relevant_rules = rules
         .iter()
         .filter(|(a, b)| update.contains(a) && update.contains(b));
@@ -96,7 +100,21 @@ fn part_1_sorting_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
             std::cmp::Ordering::Less
         }
     });
-    sorted == update
+    sorted
+}
+
+#[aoc(day5, part2)]
+fn part2((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
+    let mut rules_by_pre = HashMap::with_capacity(rules.len());
+    for (pre, post) in rules {
+        rules_by_pre.entry(pre).or_insert_with(Vec::new).push(post);
+    }
+    updates
+        .iter()
+        .filter(|&update| !part_1_check_update(update, rules))
+        .map(|update| part2_fix_update(update, rules))
+        .map(|update| update[update.len() / 2])
+        .sum()
 }
 
 fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
@@ -160,8 +178,8 @@ fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
     new_update
 }
 
-#[aoc(day5, part2)]
-fn part2((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
+#[aoc(day5, part2, sorting)]
+fn part2_sorting((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
     let mut rules_by_pre = HashMap::with_capacity(rules.len());
     for (pre, post) in rules {
         rules_by_pre.entry(pre).or_insert_with(Vec::new).push(post);
@@ -169,7 +187,7 @@ fn part2((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
     updates
         .iter()
         .filter(|&update| !part_1_check_update(update, rules))
-        .map(|update| part2_fix_update(update, rules))
+        .map(|update| sort_update(update, rules))
         .map(|update| update[update.len() / 2])
         .sum()
 }
@@ -263,5 +281,10 @@ mod tests {
     fn part2_example() {
         let input = parse(PART_1_EXAMPLE);
         assert_eq!(part2(&input), 123);
+    }
+    #[test]
+    fn part2_example_sorting() {
+        let input = parse(PART_1_EXAMPLE);
+        assert_eq!(part2_sorting(&input), 123);
     }
 }
