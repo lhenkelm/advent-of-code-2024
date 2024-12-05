@@ -88,14 +88,8 @@ fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
             };
 
             if first_pos > second_pos {
-                assert_eq!(
-                    page_position_by_id.insert(*first_id, second_pos),
-                    Some(first_pos)
-                );
-                assert_eq!(
-                    page_position_by_id.insert(*second_id, first_pos),
-                    Some(second_pos)
-                );
+                page_position_by_id.insert(*first_id, second_pos);
+                page_position_by_id.insert(*second_id, first_pos);
             }
         }
     }
