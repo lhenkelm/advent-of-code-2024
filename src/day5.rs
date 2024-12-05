@@ -30,9 +30,17 @@ fn parse(input: &str) -> (Vec<(u64, u64)>, Vec<Vec<u64>>) {
     (rules, updates)
 }
 
+#[aoc(day5, part1)]
+fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
+    updates
+        .iter()
+        .filter(|&update| part_1_check_update(update, rules))
+        .map(|update| update[update.len() / 2])
+        .sum()
+}
+
 fn part_1_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
     let page_position_by_id = update_to_page_map(update);
-
     check_page_map(&page_position_by_id, rules)
 }
 
@@ -62,13 +70,33 @@ fn check_page_map(page_position_by_id: &HashMap<u64, usize>, rules: &[(u64, u64)
     true
 }
 
-#[aoc(day5, part1)]
-fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
+#[aoc(day5, part1, sorting)]
+fn part1_sorting((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
     updates
         .iter()
-        .filter(|&update| part_1_check_update(update, rules))
+        .filter(|&update| part_1_sorting_check_update(update, rules))
         .map(|update| update[update.len() / 2])
         .sum()
+}
+
+fn part_1_sorting_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
+    let relevant_rules = rules
+        .iter()
+        .filter(|(a, b)| update.contains(a) && update.contains(b));
+    let mut rule_map = vec![vec![]; (*update.iter().max().unwrap()) as usize + 1];
+    for (before, after) in relevant_rules {
+        rule_map[*before as usize].push(*after);
+    }
+    let rule_map = rule_map;
+    let mut sorted = update.to_vec();
+    sorted.sort_by(|l, r| {
+        if rule_map[*r as usize].contains(l) {
+            std::cmp::Ordering::Greater
+        } else {
+            std::cmp::Ordering::Less
+        }
+    });
+    sorted == update
 }
 
 fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
@@ -223,6 +251,12 @@ mod tests {
     fn part1_example() {
         let input = parse(PART_1_EXAMPLE);
         assert_eq!(part1(&input), 143);
+    }
+
+    #[test]
+    fn part1_example_sorting() {
+        let input = parse(PART_1_EXAMPLE);
+        assert_eq!(part1_sorting(&input), 143);
     }
 
     #[test]
