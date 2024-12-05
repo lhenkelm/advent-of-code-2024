@@ -74,9 +74,7 @@ fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
 fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
     let mut page_position_by_id = update_to_page_map(update);
     loop {
-        if check_page_map(&page_position_by_id, rules) {
-            break;
-        }
+        let mut changed = false;
         for (first_id, second_id) in rules {
             let &first_pos = match page_position_by_id.get(first_id) {
                 Some(pos) => pos,
@@ -88,9 +86,13 @@ fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
             };
 
             if first_pos > second_pos {
+                changed = true;
                 page_position_by_id.insert(*first_id, second_pos);
                 page_position_by_id.insert(*second_id, first_pos);
             }
+        }
+        if !changed {
+            break;
         }
     }
     let mut new_update = vec![0u64; update.len()];
