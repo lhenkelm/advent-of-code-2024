@@ -74,8 +74,7 @@ fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
 fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
     let mut page_position_by_id = update_to_page_map(update);
     let mut skip_rules = HashSet::with_capacity(rules.len());
-    loop {
-        let mut changed = false;
+    {
         for (first_id, second_id) in rules {
             if skip_rules.contains(&(*first_id, *second_id)) {
                 continue;
@@ -95,6 +94,27 @@ fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
                 }
             };
 
+            if first_pos > second_pos {
+                page_position_by_id.insert(*first_id, second_pos);
+                page_position_by_id.insert(*second_id, first_pos);
+            }
+        }
+    }
+    let skip_rules = skip_rules;
+    let relevant_rules = if skip_rules.is_empty() {
+        rules.to_vec()
+    } else {
+        rules
+            .iter()
+            .filter(|(first, second)| !skip_rules.contains(&(*first, *second)))
+            .copied()
+            .collect::<Vec<_>>()
+    };
+    loop {
+        let mut changed = false;
+        for (first_id, second_id) in &relevant_rules {
+            let first_pos = page_position_by_id[first_id];
+            let second_pos = page_position_by_id[second_id];
             if first_pos > second_pos {
                 changed = true;
                 page_position_by_id.insert(*first_id, second_pos);
