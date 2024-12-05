@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
@@ -73,16 +73,26 @@ fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
 
 fn part2_fix_update(update: &[u64], rules: &[(u64, u64)]) -> Vec<u64> {
     let mut page_position_by_id = update_to_page_map(update);
+    let mut skip_rules = HashSet::with_capacity(rules.len());
     loop {
         let mut changed = false;
         for (first_id, second_id) in rules {
+            if skip_rules.contains(&(*first_id, *second_id)) {
+                continue;
+            }
             let &first_pos = match page_position_by_id.get(first_id) {
                 Some(pos) => pos,
-                None => continue,
+                None => {
+                    skip_rules.insert((*first_id, *second_id));
+                    continue;
+                }
             };
             let &second_pos = match page_position_by_id.get(second_id) {
                 Some(pos) => pos,
-                None => continue,
+                None => {
+                    skip_rules.insert((*first_id, *second_id));
+                    continue;
+                }
             };
 
             if first_pos > second_pos {
