@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day5)]
@@ -28,9 +30,37 @@ fn parse(input: &str) -> (Vec<(u64, u64)>, Vec<Vec<u64>>) {
     (rules, updates)
 }
 
+fn part_1_check_update(update: &[u64], rules: &[(u64, u64)]) -> bool {
+    let mut page_position_by_id = HashMap::with_capacity(update.len());
+    for (pos, &id) in update.iter().enumerate() {
+        page_position_by_id.insert(id, pos);
+    }
+    let page_position_by_id = page_position_by_id;
+
+    for (first_id, second_id) in rules {
+        let first_pos = match page_position_by_id.get(first_id) {
+            Some(pos) => pos,
+            None => continue,
+        };
+        let second_pos = match page_position_by_id.get(second_id) {
+            Some(pos) => pos,
+            None => continue,
+        };
+
+        if first_pos > second_pos {
+            return false;
+        }
+    }
+    true
+}
+
 #[aoc(day5, part1)]
 fn part1((rules, updates): &(Vec<(u64, u64)>, Vec<Vec<u64>>)) -> u64 {
-    todo!()
+    updates
+        .iter()
+        .filter(|&update| part_1_check_update(update, rules))
+        .map(|update| update[update.len() / 2])
+        .sum()
 }
 
 #[cfg(test)]
@@ -105,5 +135,11 @@ mod tests {
         let (rules, updates) = parse(PART_1_EXAMPLE);
         assert_eq!(rules, expected_rules);
         assert_eq!(updates, expected_updates);
+    }
+
+    #[test]
+    fn part1_example() {
+        let input = parse(PART_1_EXAMPLE);
+        assert_eq!(part1(&input), 143);
     }
 }
