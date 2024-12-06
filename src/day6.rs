@@ -246,7 +246,7 @@ fn part1((map_lab, initial_state): &(MapLab, GuardState)) -> u64 {
 }
 
 #[aoc(day6, part2)]
-fn part2((map_lab, initial_state): &(MapLab, GuardState)) -> String {
+fn part2((map_lab, initial_state): &(MapLab, GuardState)) -> u64 {
     todo!()
 }
 
@@ -517,6 +517,6 @@ mod tests {
 
     #[ignore]
     fn part2_example() {
-        assert_eq!(part2(&parse(PART_1_EXAMPLE)), "<RESULT>");
+        assert_eq!(part2(&parse(PART_1_EXAMPLE)), 6u64);
     }
 }
