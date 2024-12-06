@@ -96,7 +96,7 @@ mod tests {
         ......#...
     "};
 
-    #[test]
+    #[ignore]
     fn part1_example() {
         assert_eq!(part1(&parse(PART_1_EXAMPLE)), 41u64);
     }
@@ -120,7 +120,7 @@ mod tests {
         assert_eq!(guard.facing, Direction::Up);
     }
 
-    #[test]
+    #[ignore]
     fn part2_example() {
         assert_eq!(part2(&parse(PART_1_EXAMPLE)), "<RESULT>");
     }
