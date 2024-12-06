@@ -293,7 +293,7 @@ fn part2((map_lab, initial_state): &(MapLab, GuardState)) -> u64 {
                 None
             }
         })
-        .filter(|cand_map| yields_loop(cand_map, initial_state, visited.total() as usize))
+        .filter(|cand_map| yields_loop(cand_map, initial_state, (visited.total() / 2) as usize))
         .count() as u64
 }
 
