@@ -231,11 +231,12 @@ impl BeenThereDoneThat {
 
 #[aoc_generator(day6)]
 fn parse(input: &str) -> (MapLab, GuardState) {
-    let mut buffer = Vec::new();
+    let input = input.trim();
+    let mut buffer = Vec::with_capacity(input.len());
     let mut height = 0;
     let mut width = 0;
     let mut guard = None;
-    for (y, line) in input.trim().lines().enumerate() {
+    for (y, line) in input.lines().enumerate() {
         height = y + 1;
         if y > 0 {
             debug_assert_eq!(line.len(), width, "inconsistent line length");
