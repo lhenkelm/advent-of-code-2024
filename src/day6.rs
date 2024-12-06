@@ -286,7 +286,13 @@ fn part2((map_lab, initial_state): &(MapLab, GuardState)) -> u64 {
     let visited = BeenThereDoneThat::from_map_and_initial_state(map_lab, initial_state);
     visited
         .iter_visited()
-        .map(|cand_pos| map_lab.with_obstacle_at(&cand_pos))
+        .filter_map(|cand_pos| {
+            if cand_pos != initial_state.pos {
+                Some(map_lab.with_obstacle_at(&cand_pos))
+            } else {
+                None
+            }
+        })
         .filter(|cand_map| yields_loop(cand_map, initial_state, visited.total() as usize))
         .count() as u64
 }
