@@ -234,13 +234,13 @@ fn parse(input: &str) -> (MapLab, GuardState) {
 #[aoc(day6, part1)]
 fn part1((map_lab, initial_state): &(MapLab, GuardState)) -> u64 {
     let mut to_be_or_not_to_be = BeenThereDoneThat::with_dimensions(map_lab.width, map_lab.height);
-    let mut guard_state = dbg!(initial_state).clone();
+    let mut guard_state = initial_state.clone();
     let mut stop_reason = StopReason::Obstacle;
     while stop_reason != StopReason::EndOfMap {
         let (new_state, new_reason) = guard_state.walk(&map_lab);
         to_be_or_not_to_be.visit_between(&guard_state.pos, &new_state.pos);
-        guard_state = dbg!(new_state);
-        stop_reason = dbg!(new_reason);
+        guard_state = new_state;
+        stop_reason = new_reason;
     }
     to_be_or_not_to_be.total()
 }
