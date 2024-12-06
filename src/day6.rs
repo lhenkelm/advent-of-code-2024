@@ -1,4 +1,7 @@
-use std::ops::{Index, IndexMut};
+use std::{
+    collections::HashSet,
+    ops::{Index, IndexMut},
+};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
@@ -78,9 +81,19 @@ impl MapLab {
             }
         }
     }
+
+    fn with_obstacle_at(&self, pos: &(usize, usize)) -> MapLab {
+        let mut new_buffer = self.buffer.clone();
+        new_buffer[pos.1 * self.width + pos.0] = Location::Obstacle;
+        MapLab {
+            height: self.height,
+            width: self.width,
+            buffer: new_buffer,
+        }
+    }
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Hash)]
 enum Direction {
     Up,
     Down,
@@ -88,7 +101,7 @@ enum Direction {
     Right,
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
 struct GuardState {
     pos: (usize, usize),
     facing: Direction,
@@ -183,6 +196,37 @@ impl BeenThereDoneThat {
     fn total(&self) -> u64 {
         self.buffer.iter().filter(|&&b| b).count() as u64
     }
+
+    fn as_2d_idx(&self, idx: usize) -> (usize, usize) {
+        (idx % self.width, idx / self.width)
+    }
+
+    fn iter_visited(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+        self.buffer
+            .iter()
+            .enumerate()
+            .filter(|&(_, b)| *b)
+            .map(|(idx, _)| self.as_2d_idx(idx))
+    }
+
+    fn from_map_and_initial_state(
+        map_lab: &MapLab,
+        initial_state: &GuardState,
+    ) -> BeenThereDoneThat {
+        let mut to_be_or_not_to_be =
+            BeenThereDoneThat::with_dimensions(map_lab.width, map_lab.height);
+        let mut guard_state = initial_state.clone();
+        let mut stop_reason = StopReason::Obstacle;
+        // on adversarial maps, this could be an infinite loop
+        // to guard against this case, we could stop when we reach the same state again
+        while stop_reason != StopReason::EndOfMap {
+            let (new_state, new_reason) = guard_state.walk(&map_lab);
+            to_be_or_not_to_be.visit_between(&guard_state.pos, &new_state.pos);
+            guard_state = new_state;
+            stop_reason = new_reason;
+        }
+        to_be_or_not_to_be
+    }
 }
 
 #[aoc_generator(day6)]
@@ -233,21 +277,32 @@ fn parse(input: &str) -> (MapLab, GuardState) {
 
 #[aoc(day6, part1)]
 fn part1((map_lab, initial_state): &(MapLab, GuardState)) -> u64 {
-    let mut to_be_or_not_to_be = BeenThereDoneThat::with_dimensions(map_lab.width, map_lab.height);
-    let mut guard_state = initial_state.clone();
-    let mut stop_reason = StopReason::Obstacle;
-    while stop_reason != StopReason::EndOfMap {
-        let (new_state, new_reason) = guard_state.walk(&map_lab);
-        to_be_or_not_to_be.visit_between(&guard_state.pos, &new_state.pos);
-        guard_state = new_state;
-        stop_reason = new_reason;
-    }
-    to_be_or_not_to_be.total()
+    BeenThereDoneThat::from_map_and_initial_state(map_lab, initial_state).total()
 }
 
 #[aoc(day6, part2)]
 fn part2((map_lab, initial_state): &(MapLab, GuardState)) -> u64 {
-    todo!()
+    let visited = BeenThereDoneThat::from_map_and_initial_state(map_lab, initial_state);
+    visited
+        .iter_visited()
+        .map(|cand_pos| map_lab.with_obstacle_at(&cand_pos))
+        .filter(|cand_map| yields_loop(cand_map, initial_state, visited.total() as usize))
+        .count() as u64
+}
+
+fn yields_loop(map_lab: &MapLab, initial_state: &GuardState, estimated_capacity: usize) -> bool {
+    let mut guard_state = initial_state.clone();
+    let mut stop_reason = StopReason::Obstacle;
+    let mut prior_states = HashSet::with_capacity(estimated_capacity);
+    while stop_reason != StopReason::EndOfMap {
+        if !prior_states.insert(guard_state.clone()) {
+            return true;
+        }
+        let (new_state, new_reason) = guard_state.walk(&map_lab);
+        guard_state = new_state;
+        stop_reason = new_reason;
+    }
+    false
 }
 
 #[cfg(test)]
@@ -515,7 +570,7 @@ mod tests {
         );
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
         assert_eq!(part2(&parse(PART_1_EXAMPLE)), 6u64);
     }
