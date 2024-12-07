@@ -99,7 +99,7 @@ fn part1(input: &[CalibEq]) -> u64 {
 }
 
 #[aoc(day7, part2)]
-fn part2(input: &[CalibEq]) -> String {
+fn part2(input: &[CalibEq]) -> u64 {
     todo!()
 }
 
@@ -162,6 +162,6 @@ mod tests {
 
     #[ignore]
     fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
+        assert_eq!(part2(&parse(PART_1_EXAMPLE_INPUT)), 11387u64);
     }
 }
