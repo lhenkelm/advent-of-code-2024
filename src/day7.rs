@@ -61,16 +61,14 @@ impl Operator {
     }
 }
 
-const OPERATOR_CHOICES: [Operator; 2] = [Operator::Add, Operator::Mul];
-
-fn is_possible(calib_eq: &CalibEq, operators: &[Operator]) -> bool {
+fn is_possible(calib_eq: &CalibEq, operators: &[Operator], allowed_operators: &[Operator]) -> bool {
     match calib_eq.other_operands.len().cmp(&operators.len()) {
         Ordering::Less => panic!("too many operators for operands"),
         Ordering::Greater => {
-            for operator in OPERATOR_CHOICES {
+            for &operator in allowed_operators {
                 let mut try_operators = operators.to_vec();
                 try_operators.push(operator);
-                if is_possible(calib_eq, &try_operators) {
+                if is_possible(calib_eq, &try_operators, allowed_operators) {
                     return true;
                 }
             }
@@ -91,7 +89,7 @@ fn part1(input: &[CalibEq]) -> u64 {
     input
         .iter()
         .filter_map(|calib_eq| {
-            if is_possible(calib_eq, &[]) {
+            if is_possible(calib_eq, &[], &[Operator::Add, Operator::Mul]) {
                 Some(calib_eq.test_value)
             } else {
                 None
