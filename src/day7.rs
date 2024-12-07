@@ -1,16 +1,54 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+
+#[derive(Debug, PartialEq)]
+struct CalibEq {
+    test_value: u64,
+    leftmost: u64,
+    other_operands: Vec<u64>,
+}
+
+impl CalibEq {
+    fn from_operands<OpIt>(test_value: u64, operands: &mut OpIt) -> CalibEq
+    where
+        OpIt: Iterator<Item = u64>,
+    {
+        let leftmost = operands.next().expect("empty operands iterator");
+        CalibEq {
+            test_value,
+            leftmost,
+            other_operands: operands.collect(),
+        }
+    }
+
+    fn from_line(line: &str) -> CalibEq {
+        let mut part_it = line.split(':');
+        let test_value = part_it
+            .next()
+            .expect("no test value found (empty line?)")
+            .parse::<u64>()
+            .expect("test value is not a number");
+        let mut operands = part_it
+            .next_back()
+            .expect("no operands found")
+            .split_ascii_whitespace()
+            .map(|token| token.parse::<u64>().expect("NaN operand"));
+        debug_assert!(part_it.next().is_none());
+        CalibEq::from_operands(test_value, &mut operands)
+    }
+}
+
 #[aoc_generator(day7)]
-fn parse(input: &str) -> String {
-    todo!()
+fn parse(input: &str) -> Vec<CalibEq> {
+    input.trim().lines().map(CalibEq::from_line).collect()
 }
 
 #[aoc(day7, part1)]
-fn part1(input: &str) -> u64 {
+fn part1(input: &[CalibEq]) -> u64 {
     todo!()
 }
 
 #[aoc(day7, part2)]
-fn part2(input: &str) -> String {
+fn part2(input: &[CalibEq]) -> String {
     todo!()
 }
 
@@ -35,6 +73,40 @@ mod tests {
     #[ignore]
     fn part1_example() {
         assert_eq!(part1(&parse(PART_1_EXAMPLE_INPUT)), 3749u64);
+    }
+
+    #[test]
+    fn part1_example_parse() {
+        let expect = vec![
+            CalibEq {
+                test_value: 190,
+                leftmost: 10,
+                other_operands: vec![19],
+            },
+            CalibEq {
+                test_value: 3267,
+                leftmost: 81,
+                other_operands: vec![40, 27],
+            },
+            CalibEq {
+                test_value: 83,
+                leftmost: 17,
+                other_operands: vec![5],
+            },
+            CalibEq {
+                test_value: 156,
+                leftmost: 15,
+                other_operands: vec![6],
+            },
+            CalibEq {
+                test_value: 7290,
+                leftmost: 6,
+                other_operands: vec![8, 6, 15],
+            },
+        ];
+        for (line, exp) in PART_1_EXAMPLE_INPUT.trim().lines().zip(expect) {
+            assert_eq!(parse(line), [exp]);
+        }
     }
 
     #[ignore]
