@@ -61,7 +61,7 @@ impl Operator {
     }
 }
 
-fn is_possible(
+fn is_possible_no_tally_check(
     calib_eq: &CalibEq,
     n_consumed: usize,
     tally: u64,
@@ -72,7 +72,41 @@ fn is_possible(
         Ordering::Greater => {
             for &operator in allowed_operators {
                 let new_tally = operator.apply(tally, calib_eq.other_operands[n_consumed]);
-                if is_possible(calib_eq, n_consumed + 1, new_tally, allowed_operators) {
+                if is_possible_no_tally_check(
+                    calib_eq,
+                    n_consumed + 1,
+                    new_tally,
+                    allowed_operators,
+                ) {
+                    return true;
+                }
+            }
+            false
+        }
+        Ordering::Equal => tally == calib_eq.test_value,
+    }
+}
+
+fn is_possible_tally_check_early_stop(
+    calib_eq: &CalibEq,
+    n_consumed: usize,
+    tally: u64,
+    allowed_operators: &[Operator],
+) -> bool {
+    match calib_eq.other_operands.len().cmp(&n_consumed) {
+        Ordering::Less => panic!("consumed too many operands"),
+        Ordering::Greater => {
+            if tally > calib_eq.test_value {
+                return false;
+            }
+            for &operator in allowed_operators {
+                let new_tally = operator.apply(tally, calib_eq.other_operands[n_consumed]);
+                if is_possible_tally_check_early_stop(
+                    calib_eq,
+                    n_consumed + 1,
+                    new_tally,
+                    allowed_operators,
+                ) {
                     return true;
                 }
             }
@@ -87,7 +121,7 @@ fn part1(input: &[CalibEq]) -> u64 {
     input
         .iter()
         .filter_map(|calib_eq| {
-            if is_possible(
+            if is_possible_no_tally_check(
                 calib_eq,
                 0,
                 calib_eq.leftmost,
@@ -106,7 +140,7 @@ fn part2(input: &[CalibEq]) -> u64 {
     input
         .iter()
         .filter_map(|calib_eq| {
-            if is_possible(
+            if is_possible_tally_check_early_stop(
                 calib_eq,
                 0,
                 calib_eq.leftmost,
