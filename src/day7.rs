@@ -48,6 +48,7 @@ fn parse(input: &str) -> Vec<CalibEq> {
 enum Operator {
     Add,
     Mul,
+    Cat,
 }
 
 impl Operator {
@@ -55,6 +56,7 @@ impl Operator {
         match self {
             Operator::Add => lhs + rhs,
             Operator::Mul => lhs * rhs,
+            Operator::Cat => lhs * 10u64.pow(rhs.ilog10() + 1) + rhs,
         }
     }
 }
@@ -163,5 +165,12 @@ mod tests {
     #[ignore]
     fn part2_example() {
         assert_eq!(part2(&parse(PART_1_EXAMPLE_INPUT)), 11387u64);
+    }
+
+    #[test]
+    fn concat_op() {
+        assert_eq!(Operator::Cat.apply(123, 456), 123456);
+        assert_eq!(Operator::Cat.apply(1, 2), 12);
+        assert_eq!(Operator::Cat.apply(34, 56), 3456);
     }
 }
