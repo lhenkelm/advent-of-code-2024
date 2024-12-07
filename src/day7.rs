@@ -100,7 +100,20 @@ fn part1(input: &[CalibEq]) -> u64 {
 
 #[aoc(day7, part2)]
 fn part2(input: &[CalibEq]) -> u64 {
-    todo!()
+    input
+        .iter()
+        .filter_map(|calib_eq| {
+            if is_possible(
+                calib_eq,
+                &[],
+                &[Operator::Add, Operator::Mul, Operator::Cat],
+            ) {
+                Some(calib_eq.test_value)
+            } else {
+                None
+            }
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -160,7 +173,7 @@ mod tests {
         }
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
         assert_eq!(part2(&parse(PART_1_EXAMPLE_INPUT)), 11387u64);
     }
