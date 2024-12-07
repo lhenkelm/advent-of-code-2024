@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[derive(Debug, PartialEq)]
@@ -42,9 +44,58 @@ fn parse(input: &str) -> Vec<CalibEq> {
     input.trim().lines().map(CalibEq::from_line).collect()
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+enum Operator {
+    Add,
+    Mul,
+}
+
+impl Operator {
+    fn apply(&self, lhs: u64, rhs: u64) -> u64 {
+        match self {
+            Operator::Add => lhs + rhs,
+            Operator::Mul => lhs * rhs,
+        }
+    }
+}
+
+const OPERATOR_CHOICES: [Operator; 2] = [Operator::Add, Operator::Mul];
+
+fn is_possible(calib_eq: &CalibEq, operators: &[Operator]) -> bool {
+    match calib_eq.other_operands.len().cmp(&operators.len()) {
+        Ordering::Less => panic!("too many operators for operands"),
+        Ordering::Greater => {
+            for operator in OPERATOR_CHOICES {
+                let mut try_operators = operators.to_vec();
+                try_operators.push(operator);
+                if is_possible(calib_eq, &try_operators) {
+                    return true;
+                }
+            }
+            false
+        }
+        Ordering::Equal => {
+            let mut result = calib_eq.leftmost;
+            for (operand, operator) in calib_eq.other_operands.iter().zip(operators) {
+                result = operator.apply(result, *operand)
+            }
+            result == calib_eq.test_value
+        }
+    }
+}
+
 #[aoc(day7, part1)]
 fn part1(input: &[CalibEq]) -> u64 {
-    todo!()
+    input
+        .iter()
+        .filter_map(|calib_eq| {
+            if is_possible(calib_eq, &[]) {
+                Some(calib_eq.test_value)
+            } else {
+                None
+            }
+        })
+        .sum()
 }
 
 #[aoc(day7, part2)]
@@ -70,7 +121,7 @@ mod tests {
         292: 11 6 16 20
     "};
 
-    #[ignore]
+    #[test]
     fn part1_example() {
         assert_eq!(part1(&parse(PART_1_EXAMPLE_INPUT)), 3749u64);
     }
