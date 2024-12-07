@@ -149,7 +149,7 @@ fn part2_brute(input: &[Vec<u64>]) -> u64 {
             }
         }
     }
-    return safe;
+    safe
 }
 
 #[aoc(day2, part2, bruter_force)]
@@ -170,7 +170,7 @@ fn part2_bruter(input: &[Vec<u64>]) -> u64 {
             }
         }
     }
-    return safe;
+    safe
 }
 
 #[aoc(day2, part2, find_the_difference)]

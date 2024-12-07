@@ -19,10 +19,7 @@ enum StopReason {
 
 impl PartialEq<StopReason> for Location {
     fn eq(&self, other: &StopReason) -> bool {
-        match (self, other) {
-            (Location::Obstacle, StopReason::Obstacle) => true,
-            _ => false,
-        }
+        matches!((self, other), (Location::Obstacle, StopReason::Obstacle))
     }
 }
 
@@ -220,7 +217,7 @@ impl BeenThereDoneThat {
         // on adversarial maps, this could be an infinite loop
         // to guard against this case, we could stop when we reach the same state again
         while stop_reason != StopReason::EndOfMap {
-            let (new_state, new_reason) = guard_state.walk(&map_lab);
+            let (new_state, new_reason) = guard_state.walk(map_lab);
             to_be_or_not_to_be.visit_between(&guard_state.pos, &new_state.pos);
             guard_state = new_state;
             stop_reason = new_reason;
@@ -305,7 +302,7 @@ fn yields_loop(map_lab: &MapLab, initial_state: &GuardState, estimated_capacity:
         if !prior_states.insert(guard_state.clone()) {
             return true;
         }
-        let (new_state, new_reason) = guard_state.walk(&map_lab);
+        let (new_state, new_reason) = guard_state.walk(map_lab);
         guard_state = new_state;
         stop_reason = new_reason;
     }

@@ -1,9 +1,9 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use regex::{Regex, RegexSet};
 
-const MUL_PATTERN: &'static str = r"mul\((?<l>\d+),(?<r>\d+)\)";
-const DO_PATTERN: &'static str = r"do\(\)";
-const DONT_PATTERN: &'static str = r"don't\(\)";
+const MUL_PATTERN: &str = r"mul\((?<l>\d+),(?<r>\d+)\)";
+const DO_PATTERN: &str = r"do\(\)";
+const DONT_PATTERN: &str = r"don't\(\)";
 
 #[aoc_generator(day3, part1)]
 fn parse(input: &str) -> Vec<(u64, u64)> {

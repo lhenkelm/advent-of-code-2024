@@ -1,13 +1,11 @@
-use std::usize;
-
 use aoc_runner_derive::{aoc, aoc_generator};
 #[aoc_generator(day4, part1)]
 fn parse(input: &str) -> String {
     input.trim().to_string()
 }
 
-const XMAS: &'static str = "XMAS";
-const SAMX: &'static str = "SAMX";
+const XMAS: &str = "XMAS";
+const SAMX: &str = "SAMX";
 
 fn count_non_whitespace(s: &str) -> usize {
     s.chars().filter(|c| !c.is_whitespace()).count()
@@ -33,7 +31,7 @@ fn part1(input: &str) -> u64 {
     }
     assert_eq!(
         count_non_whitespace(&transposed),
-        count_non_whitespace(&input)
+        count_non_whitespace(input)
     );
     let transposed = transposed;
     occurances += transposed.matches(XMAS).count() as u64;
@@ -51,12 +49,12 @@ fn part1(input: &str) -> u64 {
         diagonals.push('\n');
     }
     for offset in 1..n_cols {
-        for i in 0..n_rows {
+        for (i, &line) in lines.iter().enumerate() {
             let col_idx = i + offset;
             if col_idx >= n_cols || i > n_rows - 1 {
                 break;
             }
-            diagonals.push_str(&lines[i][col_idx..col_idx + 1]);
+            diagonals.push_str(&line[col_idx..col_idx + 1]);
         }
         if offset < n_cols - 1 {
             diagonals.push('\n');
@@ -64,7 +62,7 @@ fn part1(input: &str) -> u64 {
     }
     assert_eq!(
         count_non_whitespace(&diagonals),
-        count_non_whitespace(&input)
+        count_non_whitespace(input)
     );
     let diagonals = diagonals;
     occurances += diagonals.matches(XMAS).count() as u64;
@@ -83,13 +81,13 @@ fn part1(input: &str) -> u64 {
         orthogonals.push('\n');
     }
     for offset in 1..n_cols {
-        for i in 0..n_rows {
+        for (i, &line) in lines.iter().enumerate() {
             let col_idx = i + offset;
             if col_idx >= n_cols || i > n_rows - 1 {
                 break;
             }
             let rev_col_idx = n_cols - 1 - col_idx;
-            orthogonals.push_str(&lines[i][rev_col_idx..rev_col_idx + 1]);
+            orthogonals.push_str(&line[rev_col_idx..rev_col_idx + 1]);
         }
         if offset < n_cols - 1 {
             orthogonals.push('\n');
@@ -97,7 +95,7 @@ fn part1(input: &str) -> u64 {
     }
     assert_eq!(
         count_non_whitespace(&orthogonals),
-        count_non_whitespace(&input)
+        count_non_whitespace(input)
     );
     let orthogonals = orthogonals;
     occurances += orthogonals.matches(XMAS).count() as u64;
@@ -133,7 +131,7 @@ impl CharMat {
             // silly default to avoid standard option handling
             None => "",
             // assumes ASCII, silly default to avoid standard option handling
-            Some(idx) => &self.buffer.get(idx..idx + 1).unwrap_or(""),
+            Some(idx) => self.buffer.get(idx..idx + 1).unwrap_or(""),
         }
     }
 

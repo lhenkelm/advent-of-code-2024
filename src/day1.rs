@@ -57,8 +57,8 @@ fn count_unique(numbers: &[u32]) -> HashMap<u32, u32> {
 #[aoc(day1, part2)]
 fn solve_pt2(left_and_right: &(Vec<u32>, Vec<u32>)) -> u32 {
     let (left, right) = left_and_right;
-    let left_counts = count_unique(&left);
-    let right_counts = count_unique(&right);
+    let left_counts = count_unique(left);
+    let right_counts = count_unique(right);
 
     let mut sim_score = 0u32;
     for (number, left_freq) in left_counts {
