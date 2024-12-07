@@ -84,12 +84,53 @@ fn is_possible(calib_eq: &CalibEq, operators: &[Operator], allowed_operators: &[
     }
 }
 
+fn is_possible_running_tally(
+    calib_eq: &CalibEq,
+    n_consumed: usize,
+    tally: u64,
+    allowed_operators: &[Operator],
+) -> bool {
+    match calib_eq.other_operands.len().cmp(&n_consumed) {
+        Ordering::Less => panic!("consumed too many operands"),
+        Ordering::Greater => {
+            for &operator in allowed_operators {
+                let new_tally = operator.apply(tally, calib_eq.other_operands[n_consumed]);
+                if is_possible_running_tally(calib_eq, n_consumed + 1, new_tally, allowed_operators)
+                {
+                    return true;
+                }
+            }
+            false
+        }
+        Ordering::Equal => tally == calib_eq.test_value,
+    }
+}
+
 #[aoc(day7, part1)]
 fn part1(input: &[CalibEq]) -> u64 {
     input
         .iter()
         .filter_map(|calib_eq| {
             if is_possible(calib_eq, &[], &[Operator::Add, Operator::Mul]) {
+                Some(calib_eq.test_value)
+            } else {
+                None
+            }
+        })
+        .sum()
+}
+
+#[aoc(day7, part1, running_tally)]
+fn part1_running_tally(input: &[CalibEq]) -> u64 {
+    input
+        .iter()
+        .filter_map(|calib_eq| {
+            if is_possible_running_tally(
+                calib_eq,
+                0,
+                calib_eq.leftmost,
+                &[Operator::Add, Operator::Mul],
+            ) {
                 Some(calib_eq.test_value)
             } else {
                 None
@@ -106,6 +147,25 @@ fn part2(input: &[CalibEq]) -> u64 {
             if is_possible(
                 calib_eq,
                 &[],
+                &[Operator::Add, Operator::Mul, Operator::Cat],
+            ) {
+                Some(calib_eq.test_value)
+            } else {
+                None
+            }
+        })
+        .sum()
+}
+
+#[aoc(day7, part2, running_tally)]
+fn part2_running_tally(input: &[CalibEq]) -> u64 {
+    input
+        .iter()
+        .filter_map(|calib_eq| {
+            if is_possible_running_tally(
+                calib_eq,
+                0,
+                calib_eq.leftmost,
                 &[Operator::Add, Operator::Mul, Operator::Cat],
             ) {
                 Some(calib_eq.test_value)
@@ -137,6 +197,11 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(part1(&parse(PART_1_EXAMPLE_INPUT)), 3749u64);
+    }
+
+    #[test]
+    fn part1_example_running_tally() {
+        assert_eq!(part1_running_tally(&parse(PART_1_EXAMPLE_INPUT)), 3749u64);
     }
 
     #[test]
@@ -176,6 +241,11 @@ mod tests {
     #[test]
     fn part2_example() {
         assert_eq!(part2(&parse(PART_1_EXAMPLE_INPUT)), 11387u64);
+    }
+
+    #[test]
+    fn part2_example_running_tally() {
+        assert_eq!(part2_running_tally(&parse(PART_1_EXAMPLE_INPUT)), 11387u64);
     }
 
     #[test]
