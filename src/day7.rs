@@ -197,27 +197,15 @@ fn is_possible_check_backwards(
     false
 }
 
+#[aoc_generator(day7, part2, check_fwd)]
 #[aoc_generator(day7, part1, check_fwd)]
 fn parse(input: &str) -> Vec<CalibEq> {
     input.trim().lines().map(CalibEq::from_line).collect()
 }
 
-#[aoc_generator(day7, part2, check_fwd)]
-fn parse_2(input: &str) -> Vec<CalibEq> {
-    input.trim().lines().map(CalibEq::from_line).collect()
-}
-
+#[aoc_generator(day7, part2, check_backwards)]
 #[aoc_generator(day7, part1, check_backwards)]
 fn parse_check_backwards(input: &str) -> Vec<CalibEqCheckBackwards> {
-    input
-        .trim()
-        .lines()
-        .map(CalibEqCheckBackwards::from_line)
-        .collect()
-}
-
-#[aoc_generator(day7, part2, check_backwards)]
-fn parse_check_backwards_p2(input: &str) -> Vec<CalibEqCheckBackwards> {
     input
         .trim()
         .lines()
@@ -395,13 +383,13 @@ mod tests {
 
     #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse_2(PART_1_EXAMPLE_INPUT)), 11387u64);
+        assert_eq!(part2(&parse(PART_1_EXAMPLE_INPUT)), 11387u64);
     }
 
     #[test]
     fn part2_example_check_back() {
         assert_eq!(
-            part2_check_backwards(&parse_check_backwards_p2(PART_1_EXAMPLE_INPUT)),
+            part2_check_backwards(&parse_check_backwards(PART_1_EXAMPLE_INPUT)),
             11387u64
         );
     }
