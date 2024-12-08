@@ -409,5 +409,6 @@ mod tests {
         assert_eq!(Operator::Cat.check_backwards(12, 3), None);
         assert_eq!(Operator::Cat.check_backwards(3456, 56), Some(34));
         assert_eq!(Operator::Cat.check_backwards(3456, 5), None);
+        assert_eq!(Operator::Cat.check_backwards(56, 456), None);
     }
 }
