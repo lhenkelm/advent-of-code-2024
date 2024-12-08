@@ -10,7 +10,20 @@ struct Point {
 
 #[aoc_generator(day8)]
 fn parse(input: &str) -> (HashMap<char, Vec<Point>>, Point) {
-    todo!()
+    let input = input.trim();
+    let mut points = HashMap::new();
+    let mut max_point = Point { x: 0, y: 0 };
+    for (y, line) in input.lines().enumerate() {
+        max_point.y = y;
+        for (x, character) in line.chars().enumerate() {
+            max_point.x = x;
+            if character.is_alphanumeric() {
+                let entry = points.entry(character).or_insert_with(Vec::new);
+                entry.push(Point { x, y });
+            }
+        }
+    }
+    (points, max_point)
 }
 
 #[aoc(day8, part1)]
@@ -49,7 +62,7 @@ mod tests {
         assert_eq!(part1(&parse(PART_1_EXAMPLE)), 14);
     }
 
-    #[ignore]
+    #[test]
     fn part1_parse_example() {
         let (parsed, max_point) = parse(PART_1_EXAMPLE);
         assert_eq!(parsed.len(), 2);
