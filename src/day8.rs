@@ -26,8 +26,12 @@ fn parse(input: &str) -> (HashMap<char, Vec<Point<usize>>>, Point<usize>) {
     (points, max_point)
 }
 
-#[aoc(day8, part1)]
-fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
+fn find_antinodes(
+    antennas: &HashMap<char, Vec<Point<usize>>>,
+    max_point: &Point<usize>,
+    max_harmonics: usize,
+) -> HashSet<Point<isize>> {
+    assert!(max_harmonics > 0);
     let height = (max_point.y + 1) as isize;
     let width = (max_point.x + 1) as isize;
     let mut points_with_antinodes = HashSet::new();
@@ -39,19 +43,29 @@ fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>
                 }
                 let dx = picked.x as isize - other.x as isize;
                 let dy = picked.y as isize - other.y as isize;
-                let antinode = Point::<isize> {
-                    x: (picked.x as isize + dx),
-                    y: (picked.y as isize + dy),
-                };
-                if (antinode.x < width && antinode.y < height)
-                    && (antinode.x >= 0 && antinode.y >= 0)
-                {
+                for i in 0..max_harmonics {
+                    let antinode = Point::<isize> {
+                        x: (picked.x as isize + dx * (i + 1) as isize),
+                        y: (picked.y as isize + dy * (i + 1) as isize),
+                    };
+                    if antinode.x >= width
+                        || antinode.y >= height
+                        || antinode.x < 0
+                        || antinode.y < 0
+                    {
+                        break;
+                    }
                     points_with_antinodes.insert(antinode);
                 }
             }
         }
     }
-    points_with_antinodes.len() as u64
+    points_with_antinodes
+}
+
+#[aoc(day8, part1)]
+fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
+    find_antinodes(antennas, max_point, 1).len() as u64
 }
 
 #[aoc(day8, part2)]
