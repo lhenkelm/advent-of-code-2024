@@ -173,7 +173,7 @@ fn is_possible_check_backwards(
     operands: &[u64],
     allowed_operators: &[Operator],
 ) -> bool {
-    debug_assert!(operands.len() > 0, "need at least one operand");
+    debug_assert!(!operands.is_empty(), "need at least one operand");
     // base case
     if operands.len() == 1 {
         return operands[0] == current_target;
