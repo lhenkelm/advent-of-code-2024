@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 struct Point<Num> {
     x: Num,
     y: Num,
@@ -30,7 +30,7 @@ fn parse(input: &str) -> (HashMap<char, Vec<Point<usize>>>, Point<usize>) {
 fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
     let height = (max_point.y + 1) as isize;
     let width = (max_point.x + 1) as isize;
-    let mut n_antinodes = 0;
+    let mut points_with_antinodes = HashSet::new();
     for points in antennas.values() {
         for picked in points.iter() {
             for other in points.iter() {
@@ -46,12 +46,12 @@ fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>
                 if (antinode.x < width && antinode.y < height)
                     && (antinode.x >= 0 && antinode.y >= 0)
                 {
-                    n_antinodes += 1;
+                    points_with_antinodes.insert(antinode);
                 }
             }
         }
     }
-    n_antinodes
+    points_with_antinodes.len() as u64
 }
 
 #[aoc(day8, part2)]
