@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
@@ -15,9 +15,9 @@ enum Part {
 }
 
 #[aoc_generator(day8)]
-fn parse(input: &str) -> (HashMap<char, Vec<Point<usize>>>, Point<usize>) {
+fn parse(input: &str) -> (FxHashMap<char, Vec<Point<usize>>>, Point<usize>) {
     let input = input.trim();
-    let mut points = HashMap::new();
+    let mut points = FxHashMap::default();
     let mut max_point = Point { x: 0, y: 0 };
     for (y, line) in input.lines().enumerate() {
         max_point.y = y;
@@ -33,17 +33,17 @@ fn parse(input: &str) -> (HashMap<char, Vec<Point<usize>>>, Point<usize>) {
 }
 
 fn find_antinodes(
-    antennas: &HashMap<char, Vec<Point<usize>>>,
+    antennas: &FxHashMap<char, Vec<Point<usize>>>,
     max_point: &Point<usize>,
     max_harmonics: usize,
     part: Part,
-) -> HashSet<Point<isize>> {
+) -> FxHashSet<Point<isize>> {
     assert!(max_harmonics > 0);
     let max_point = Point {
         x: max_point.x as isize,
         y: max_point.y as isize,
     };
-    let mut points_with_antinodes = HashSet::new();
+    let mut points_with_antinodes = FxHashSet::default();
     for points in antennas.values() {
         for picked in points.iter() {
             for other in points.iter() {
@@ -73,12 +73,12 @@ fn find_antinodes(
 }
 
 #[aoc(day8, part1)]
-fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
+fn part1((antennas, max_point): &(FxHashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
     find_antinodes(antennas, max_point, 1, Part::One).len() as u64
 }
 
 #[aoc(day8, part2)]
-fn part2((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
+fn part2((antennas, max_point): &(FxHashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
     find_antinodes(antennas, max_point, max_point.x.max(max_point.y), Part::Two).len() as u64
 }
 
