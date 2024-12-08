@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[derive(Debug, PartialEq, Eq)]
-struct Point {
-    x: usize,
-    y: usize,
+struct Point<Num> {
+    x: Num,
+    y: Num,
 }
 
 #[aoc_generator(day8)]
-fn parse(input: &str) -> (HashMap<char, Vec<Point>>, Point) {
+fn parse(input: &str) -> (HashMap<char, Vec<Point<usize>>>, Point<usize>) {
     let input = input.trim();
     let mut points = HashMap::new();
     let mut max_point = Point { x: 0, y: 0 };
@@ -27,12 +27,34 @@ fn parse(input: &str) -> (HashMap<char, Vec<Point>>, Point) {
 }
 
 #[aoc(day8, part1)]
-fn part1(input: &(HashMap<char, Vec<Point>>, Point)) -> u64 {
-    todo!()
+fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
+    let height = (max_point.y + 1) as isize;
+    let width = (max_point.x + 1) as isize;
+    let mut n_antinodes = 0;
+    for points in antennas.values() {
+        for picked in points.iter() {
+            for other in points.iter() {
+                if picked == other {
+                    continue;
+                }
+                let dx = picked.x as isize - other.x as isize;
+                let dy = picked.y as isize - other.y as isize;
+                let antinode = Point::<isize> {
+                    x: (picked.x as isize + dx),
+                    y: (picked.y as isize + dy),
+                };
+                if (antinode.x < width && antinode.y < height) && (antinode.x > 0 && antinode.y > 0)
+                {
+                    n_antinodes += 1;
+                }
+            }
+        }
+    }
+    n_antinodes
 }
 
 #[aoc(day8, part2)]
-fn part2(input: &(HashMap<char, Vec<Point>>, Point)) -> String {
+fn part2(input: &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> String {
     todo!()
 }
 
@@ -57,7 +79,7 @@ mod tests {
         ............
     "};
 
-    #[ignore]
+    #[test]
     fn part1_example() {
         assert_eq!(part1(&parse(PART_1_EXAMPLE)), 14);
     }
