@@ -8,6 +8,12 @@ struct Point<Num> {
     y: Num,
 }
 
+#[derive(PartialEq, Eq)]
+enum Part {
+    One,
+    Two,
+}
+
 #[aoc_generator(day8)]
 fn parse(input: &str) -> (HashMap<char, Vec<Point<usize>>>, Point<usize>) {
     let input = input.trim();
@@ -30,15 +36,18 @@ fn find_antinodes(
     antennas: &HashMap<char, Vec<Point<usize>>>,
     max_point: &Point<usize>,
     max_harmonics: usize,
+    part: Part,
 ) -> HashSet<Point<isize>> {
     assert!(max_harmonics > 0);
-    let height = (max_point.y + 1) as isize;
-    let width = (max_point.x + 1) as isize;
+    let max_point = Point {
+        x: max_point.x as isize,
+        y: max_point.y as isize,
+    };
     let mut points_with_antinodes = HashSet::new();
     for points in antennas.values() {
         for picked in points.iter() {
             for other in points.iter() {
-                if picked == other {
+                if (part == Part::One) && picked == other {
                     continue;
                 }
                 let dx = picked.x as isize - other.x as isize;
@@ -48,8 +57,8 @@ fn find_antinodes(
                         x: (picked.x as isize + dx * (i + 1) as isize),
                         y: (picked.y as isize + dy * (i + 1) as isize),
                     };
-                    if antinode.x >= width
-                        || antinode.y >= height
+                    if antinode.x > max_point.x
+                        || antinode.y > max_point.y
                         || antinode.x < 0
                         || antinode.y < 0
                     {
@@ -65,12 +74,12 @@ fn find_antinodes(
 
 #[aoc(day8, part1)]
 fn part1((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
-    find_antinodes(antennas, max_point, 1).len() as u64
+    find_antinodes(antennas, max_point, 1, Part::One).len() as u64
 }
 
 #[aoc(day8, part2)]
-fn part2(input: &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> String {
-    todo!()
+fn part2((antennas, max_point): &(HashMap<char, Vec<Point<usize>>>, Point<usize>)) -> u64 {
+    find_antinodes(antennas, max_point, max_point.x.max(max_point.y), Part::Two).len() as u64
 }
 
 #[cfg(test)]
@@ -156,8 +165,9 @@ mod tests {
         "};
         assert_eq!(part1(&parse(input)), 4);
     }
-    #[ignore]
+
+    #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse(PART_1_EXAMPLE)), "<RESULT>");
+        assert_eq!(part2(&parse(PART_1_EXAMPLE)), 34);
     }
 }
