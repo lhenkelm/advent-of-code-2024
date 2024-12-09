@@ -53,30 +53,29 @@ fn part1(input: &[DenseDiskValue]) -> u64 {
     // earlier to compress the used space
     let mut bwd_iter = fwd_iter
         .clone()
-        .filter_map(|(idx_bwd, id_opt)| match *id_opt {
-            Some(id) => Some((idx_bwd, id)),
-            None => None,
-        });
+        .filter_map(|(idx_bwd, id_opt)| (*id_opt).map(|id| (idx_bwd, id)));
     // another vector to store the result of file-compacting.
     // Maybe there is a way to avoid the extra allocation?
     // 3 is another uninformed guess based on what the example looks like
     let mut compressed_disk_map = Vec::with_capacity(input.len() * 3);
-    loop {
-        let idx_fwd = loop {
+    'outer: loop {
+        let (idx_bwd, next_file_back) = bwd_iter
+            .next_back()
+            .expect("should never retreat this one that far");
+
+        loop {
             let (idx_fwd, next_fwd) = fwd_iter
                 .next()
                 .expect("should never advance this one that far");
             match next_fwd {
-                None => break idx_fwd,
+                None => (),
                 Some(file_id) => compressed_disk_map.push(*file_id),
             }
-        };
-
-        let (idx_bwd, next_file_back) = bwd_iter
-            .next_back()
-            .expect("should never retreat this one that far");
-        if idx_fwd >= idx_bwd {
-            break;
+            if idx_fwd >= idx_bwd {
+                break 'outer;
+            } else if next_fwd.is_none() {
+                break;
+            }
         }
         compressed_disk_map.push(next_file_back);
     }
