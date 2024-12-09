@@ -24,10 +24,8 @@ fn parse(input: &str) -> Vec<DenseDiskValue> {
         .collect()
 }
 
-#[aoc(day9, part1)]
-fn part1(input: &[DenseDiskValue]) -> u64 {
-    // a) Expand the compressed disk map representation
-    // 5 is not optimised, just guessed (files/empties can have beetween 1 and 9 blocks)
+fn expand_dense_representation(input: &[DenseDiskValue]) -> Vec<Option<u64>> {
+    // 5 is not optimised, just guessed (files/empties can have between 1 and 9 blocks)
     let mut sparse_disk_map = Vec::with_capacity(input.len() * 5);
     let mut current_file_id = 0u64;
     for val in input {
@@ -42,22 +40,28 @@ fn part1(input: &[DenseDiskValue]) -> u64 {
             }
         }
     }
-    let sparse_disk_map = sparse_disk_map;
+    sparse_disk_map
+}
 
-    // b) Find the compact allocation of files to blocks
+#[aoc(day9, part1)]
+fn part1(input: &[DenseDiskValue]) -> u64 {
+    let sparse_disk_map = expand_dense_representation(input);
 
     // this one walks the disk map from the start, to either copy existing file IDs,
     // or to identify a gap where a block from a file on the back may be inserted
     let mut fwd_iter = sparse_disk_map.iter().enumerate();
+
     // this one walks the disk map from the end, to find blocks of files that can be moved
     // earlier to compress the used space
     let mut bwd_iter = fwd_iter
         .clone()
         .filter_map(|(idx_bwd, id_opt)| (*id_opt).map(|id| (idx_bwd, id)));
+
     // another vector to store the result of file-compacting.
     // Maybe there is a way to avoid the extra allocation?
     // 3 is another uninformed guess based on what the example looks like
     let mut compressed_disk_map = Vec::with_capacity(input.len() * 3);
+
     'outer: loop {
         let (idx_bwd, next_file_back) = bwd_iter
             .next_back()
@@ -80,7 +84,7 @@ fn part1(input: &[DenseDiskValue]) -> u64 {
         compressed_disk_map.push(next_file_back);
     }
 
-    // c) compute the checksum
+    // b) compute the checksum
     compressed_disk_map
         .iter()
         .enumerate()
