@@ -8,7 +8,18 @@ enum DenseDiskValue {
 
 #[aoc_generator(day9)]
 fn parse(input: &str) -> Vec<DenseDiskValue> {
-    todo!()
+    input
+        .trim()
+        .chars()
+        .map(|c| c.to_digit(10).expect("Invalid digit") as u8)
+        .enumerate()
+        .filter_map(|(idx, n_blocks)| match (idx % 2, n_blocks) {
+            (_, 0) => None,
+            (0, n_blocks) => Some(DenseDiskValue::Full(n_blocks)),
+            (1, n_blocks) => Some(DenseDiskValue::Empty(n_blocks)),
+            _ => unreachable!(),
+        })
+        .collect()
 }
 
 #[aoc(day9, part1)]
@@ -36,7 +47,7 @@ mod tests {
         assert_eq!(part1(&parse(PART_1_EXAMPLE)), 1928u64);
     }
 
-    #[ignore]
+    #[test]
     fn part_1_example_parse() {
         use DenseDiskValue::*;
         assert_eq!(
