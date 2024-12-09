@@ -1,11 +1,20 @@
 use std::iter;
 
 use aoc_runner_derive::{aoc, aoc_generator};
+use rustc_hash::FxHashSet;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum DenseDiskValue {
     Empty(u8),
     Full(u8),
+}
+
+impl DenseDiskValue {
+    fn blocks(&self) -> u8 {
+        match self {
+            DenseDiskValue::Empty(n) | DenseDiskValue::Full(n) => *n,
+        }
+    }
 }
 
 #[aoc_generator(day9)]
@@ -94,8 +103,51 @@ fn part1(input: &[DenseDiskValue]) -> u64 {
 }
 
 #[aoc(day9, part2)]
-fn part2(input: &[DenseDiskValue]) -> String {
-    todo!()
+fn part2(input: &[DenseDiskValue]) -> u64 {
+    let mut disk_map = expand_dense_representation(input);
+    let max_file_id = disk_map
+        .iter()
+        .filter_map(|&id_opt| id_opt.map(|i| i))
+        .max()
+        .unwrap();
+    let unique_file_ids = (0..(max_file_id + 1)).rev();
+    for file_id in unique_file_ids {
+        let file_from = disk_map
+            .iter()
+            .position(|&fid| fid == Some(file_id))
+            .unwrap();
+        let file_to = disk_map
+            .iter()
+            .rposition(|&fid| fid == Some(file_id))
+            .unwrap();
+        let n_file_blocks = file_to + 1 - file_from;
+        for empty_from in 0..file_from {
+            let empty_to = empty_from + n_file_blocks;
+            if disk_map[empty_from..empty_to]
+                .iter()
+                .all(|&fid| fid.is_none())
+            {
+                for i in empty_from..empty_to {
+                    disk_map[i] = Some(file_id);
+                }
+                for i in file_from..file_to + 1 {
+                    disk_map[i] = None;
+                }
+                break;
+            }
+        }
+    }
+
+    disk_map
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, &id_opt)| match (idx, id_opt) {
+            (_, None) => None,
+            (idx, Some(file_id)) => Some((idx, file_id)),
+        })
+        .fold(0u64, |partial, (next_idx, next_file_id)| {
+            partial + next_idx as u64 * next_file_id
+        })
 }
 
 #[cfg(test)]
@@ -142,8 +194,8 @@ mod tests {
         );
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse(PART_1_EXAMPLE)), "<RESULT>");
+        assert_eq!(part2(&parse(PART_1_EXAMPLE)), 2858);
     }
 }
