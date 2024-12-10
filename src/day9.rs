@@ -115,9 +115,11 @@ fn part2(input: &[DenseDiskValue]) -> u64 {
                 .iter()
                 .all(|&fid| fid.is_none())
             {
+                #[allow(clippy::needless_range_loop)]
                 for i in empty_from..empty_to {
                     disk_map[i] = Some(file_id);
                 }
+                #[allow(clippy::needless_range_loop)]
                 for i in file_from..file_to + 1 {
                     disk_map[i] = None;
                 }
