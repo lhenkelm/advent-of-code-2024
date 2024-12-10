@@ -189,7 +189,6 @@ fn part2(input: &Grid<u8>) -> u64 {
         .sum::<u64>()
 }
 
-#[derive(Debug)]
 struct Grid<Item> {
     data: Vec<Item>,
     width: usize,
@@ -220,7 +219,7 @@ impl<Item> Grid<Item> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 struct Point {
     x: usize,
     y: usize,
@@ -251,7 +250,7 @@ impl<Item> IndexMut<Point> for Grid<Item> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 enum Direction {
     North,
     East,
