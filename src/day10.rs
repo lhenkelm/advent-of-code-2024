@@ -111,9 +111,82 @@ fn part1(input: &Grid<u8>) -> u64 {
         .sum::<u64>()
 }
 
+/// Part 2 is very similar to part 1, but rather than _scoring_ the trail-heads,
+/// we now _rate_ them. Completely different!
+/// (rating  = counting unique trails starting from the trail-head)
+/// (scoring = counting unique height-9 peaks reachable from the trail-head)
 #[aoc(day10, part2)]
-fn part2(input: &Grid<u8>) -> String {
-    todo!()
+fn part2(input: &Grid<u8>) -> u64 {
+    let mut shy_flows = Grid::<Vec<Direction>> {
+        data: vec![Vec::with_capacity(4); input.data.len()],
+        width: input.width,
+        height: input.height,
+    };
+    let mut point_idx_by_height = [
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+        Vec::with_capacity(input.data.len() / 10),
+    ];
+    for (idx, &height) in input.data.iter().enumerate() {
+        debug_assert!(height < 10);
+        // no flows end in the peak
+        if height == 9 {
+            continue;
+        }
+        point_idx_by_height[height as usize].push(idx);
+        let point = input.point_index(idx).unwrap();
+        for direction in DIRECTIONS {
+            let nearest_neighbour = point + direction.step();
+            if let Some(&neighbour_height) = input.get(nearest_neighbour) {
+                if neighbour_height == height + 1 {
+                    shy_flows[point].push(direction);
+                }
+            }
+        }
+    }
+    let shy_flows = shy_flows;
+    let point_idx_by_height = point_idx_by_height;
+
+    // welcome to the first difference w.r.t. part 1:
+    // rather than tracking the sources, we track the unique ways any flow from any source
+    // can reach this point.
+    let mut unique_flows_through_here = Grid::<u64> {
+        data: vec![0; input.data.len()],
+        width: input.width,
+        height: input.height,
+    };
+    // for height 8 (one below the highest) the sources _are_ the higher neighbours
+    for flat_idx in &point_idx_by_height[8] {
+        // one step from the source, every source is a unique flow, bijectively
+        unique_flows_through_here.data[*flat_idx] = shy_flows.data[*flat_idx].len() as u64;
+    }
+    // for the other heights, we can step down height by height and aggregate the **flow counts**,
+    // according to the local flow (and we skip 8 because we already did it)
+    for isoheight_indices in point_idx_by_height.iter().rev().skip(1) {
+        for flat_idx in isoheight_indices {
+            let sink_point = shy_flows.point_index(*flat_idx).unwrap();
+            for dir in &shy_flows[sink_point] {
+                let source_point = sink_point + dir.step();
+                // no borrow checker shenanigans because u64 is Copy, so just implicitly cloned here
+                unique_flows_through_here[sink_point] += unique_flows_through_here[source_point];
+            }
+        }
+    }
+    let flow_sources_ending_at = unique_flows_through_here;
+
+    // now we remember that the inverse of the shy flow is the hiking trail,
+    // so where the flow ends (height-0 sinks) is where the trail starts - the trail-head,
+    // and the number in each height-0 point is already our trail-head rating 🥳.
+    point_idx_by_height[0]
+        .iter()
+        .map(|flat_idx| flow_sources_ending_at.data[*flat_idx])
+        .sum::<u64>()
 }
 
 #[derive(Debug)]
@@ -147,7 +220,7 @@ impl<Item> Grid<Item> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Point {
     x: usize,
     y: usize,
@@ -225,8 +298,8 @@ mod tests {
         assert_eq!(part1(&parse(EXAMPLE_PART_1)), 36);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
+        assert_eq!(part2(&parse(EXAMPLE_PART_1)), 81);
     }
 }
