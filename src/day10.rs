@@ -3,17 +3,37 @@ use std::ops::{Add, Index, IndexMut};
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day10)]
-fn parse(input: &str) -> String {
-    todo!()
+fn parse(input: &str) -> Grid<u8> {
+    let mut buffer = Vec::with_capacity(input.len());
+    let mut width = None;
+    let mut height = 0;
+    for line in input.trim().lines() {
+        if let Some(width) = width {
+            debug_assert_eq!(line.len(), width);
+        }
+        width = Some(line.len());
+
+        buffer.extend(
+            line.chars()
+                .map(|c| c.to_digit(10).expect("non-digit char found") as u8),
+        );
+        height += 1;
+    }
+    let width = width.expect("empty input");
+    Grid::<u8> {
+        data: buffer,
+        width,
+        height,
+    }
 }
 
 #[aoc(day10, part1)]
-fn part1(input: &str) -> u64 {
+fn part1(input: &Grid<u8>) -> u64 {
     todo!()
 }
 
 #[aoc(day10, part2)]
-fn part2(input: &str) -> String {
+fn part2(input: &Grid<u8>) -> String {
     todo!()
 }
 
