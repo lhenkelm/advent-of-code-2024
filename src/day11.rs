@@ -1,16 +1,20 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 #[aoc_generator(day11)]
-fn parse(input: &str) -> String {
-    todo!()
+fn parse(input: &str) -> Vec<u64> {
+    input
+        .trim()
+        .split_whitespace()
+        .map(|tok| tok.parse().unwrap())
+        .collect()
 }
 
 #[aoc(day11, part1)]
-fn part1(input: &str) -> u128 {
+fn part1(input: &[u64]) -> u128 {
     todo!()
 }
 
 #[aoc(day11, part2)]
-fn part2(input: &str) -> String {
+fn part2(input: &[u64]) -> String {
     todo!()
 }
 
