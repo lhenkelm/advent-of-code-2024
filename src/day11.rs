@@ -1,4 +1,6 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use memoize::memoize;
+
 #[aoc_generator(day11)]
 fn parse(input: &str) -> Vec<u64> {
     input
@@ -25,7 +27,7 @@ fn part2(stones: &[u64]) -> u64 {
         .sum()
 }
 
-// TODO: this can be much faster with memoization
+#[memoize]
 fn part1_apply_rules_and_count(stone: u64, times_remaining: u8) -> u64 {
     if times_remaining == 0 {
         return 1;
