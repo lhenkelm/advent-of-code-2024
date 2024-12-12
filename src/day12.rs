@@ -25,7 +25,7 @@ fn parse(input: &str) -> Grid<char> {
 
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
-    let regions = mark_regions_flood_fill(&input);
+    let regions = mark_regions_flood_fill(input);
     let region_areas = measure_region_areas(&regions);
     let region_perimeters = measure_region_perimeters(&regions);
 
@@ -38,7 +38,7 @@ fn part1(input: &Grid<char>) -> u64 {
 
 #[aoc(day12, part2)]
 fn part2(input: &Grid<char>) -> u64 {
-    let regions = mark_regions_flood_fill(&input);
+    let regions = mark_regions_flood_fill(input);
     let region_areas = measure_region_areas(&regions);
     let region_side_counts = count_region_sides(&regions);
 
@@ -153,10 +153,9 @@ fn measure_region_perimeters(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
 
 fn count_region_sides(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
     let mut sides = FxHashMap::default();
-    for (flat_idx, plant_region) in regions.data.iter().enumerate() {
+    for (flat_idx, &region) in regions.data.iter().enumerate() {
         let plant_pos = regions.point_index(flat_idx).unwrap();
-        let region = regions[plant_pos];
-        let mut region_sides = sides.entry(region).or_insert_with(|| FxHashSet::default());
+        let region_sides = sides.entry(region).or_insert_with(FxHashSet::default);
         let normals: Vec<&Direction> = DIRECTIONS
             .iter()
             .filter(|&d| match regions.get(plant_pos + d.step()) {
@@ -226,7 +225,7 @@ fn count_region_sides(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
             }
             _ => unreachable!(),
         };
-        walk_sides(initial_side, regions, region, &mut region_sides);
+        walk_sides(initial_side, regions, region, region_sides);
     }
 
     let mut sides_counts = FxHashMap::default();
@@ -354,7 +353,7 @@ fn walk_sides(
         Side::InnerCorner(_) => unreachable!(),
     }
 
-    reg_sides.insert(side.clone());
+    reg_sides.insert(side);
 
     // check the different next boundary segments
     let out_normal = side.out_normal();
@@ -497,39 +496,18 @@ enum Side {
 }
 
 impl Side {
-    fn in_normal(&self) -> Direction {
-        match self {
-            Side::Edge(Edge { loc, normal }) => *normal,
-            Side::Corner(Corner {
-                loc,
-                nrm_in,
-                nrm_out,
-            }) => *nrm_in,
-            Side::Triple(Triple {
-                loc,
-                nrm_in,
-                nrm_mid,
-                nrm_out,
-            }) => *nrm_in,
-            Side::Full(full) => panic!("Side::Full::in_normal() called on {:?}!", full),
-            Side::InnerCorner(inner) => {
-                panic!("Side::InnerCorner::in_normal() called on {:?}!", inner)
-            }
-        }
-    }
-
     fn out_normal(&self) -> Direction {
         match self {
-            Side::Edge(Edge { loc, normal }) => *normal,
+            Side::Edge(Edge { loc: _, normal }) => *normal,
             Side::Corner(Corner {
-                loc,
-                nrm_in,
+                loc: _,
+                nrm_in: _,
                 nrm_out,
             }) => *nrm_out,
             Side::Triple(Triple {
-                loc,
-                nrm_in,
-                nrm_mid,
+                loc: _,
+                nrm_in: _,
+                nrm_mid: _,
                 nrm_out,
             }) => *nrm_out,
             Side::Full(full) => panic!("Side::Full::out_normal() called on {:?}!", full),
@@ -594,6 +572,10 @@ impl Edge {
 /// nrm_in: West
 /// nrm_out: North
 /// (from the point of view of the '#' region)
+/// There is also a diagonally opposite corner
+/// in the '-' region, which is an 'inner' or 'concave' corner -
+/// meaning the associated plant has no direct neighbours in another group,
+/// and its normals apply to its neighbouring edge cells instead.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Corner {
     loc: Point,
@@ -843,6 +825,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn part2_example_EXE() {
         let input = indoc! {"
             EEEEE
@@ -855,6 +838,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn part2_example_B_islands_diag() {
         let input = indoc! {"
             AAAAAA

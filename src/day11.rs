@@ -4,7 +4,6 @@ use memoize::memoize;
 #[aoc_generator(day11)]
 fn parse(input: &str) -> Vec<u64> {
     input
-        .trim()
         .split_whitespace()
         .map(|tok| tok.parse().unwrap())
         .collect()
