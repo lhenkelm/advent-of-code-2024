@@ -410,7 +410,7 @@ fn walk_sides(
     // on all sides, and where other corners/triples' normals may be modelled as a
     // (series of) clockwise turn (s), inner corners two normals are related by an anti-clockwise
     // turn
-    let inner_corner = Side::InnerCorner(Corner::with_conv_normal(new_loc, turned_normal));
+    let inner_corner = Side::InnerCorner(Corner::with_conv_normal(new_loc, out_normal));
     if walk_sides(
         Side::Edge(Edge::with_in_normal(past_corner, turned_normal)),
         regions,
@@ -866,5 +866,42 @@ mod tests {
             bb
         "};
         assert_eq!(part2(&parse(input)), 4 + 3 * 6);
+    }
+
+    #[test]
+    fn part2_another_try() {
+        let input = indoc! {"
+            OOOOO
+            OXOXO
+            OXXXO
+        "};
+        assert_eq!(part2(&parse(input)), 160);
+    }
+
+    #[test]
+    fn part2_kerma() {
+        let input = indoc! {"
+            .....
+            .AAA.
+            .A.A.
+            .AA..
+            .A.A.
+            .AAA.
+            .....
+        "};
+        assert_eq!(part2(&parse(input)), 452);
+    }
+
+    #[test]
+    fn part2_maybe() {
+        let input = indoc! {"
+            XXXXXXX
+            XTTTTTX
+            XXXTXXX
+            XXXTXXX
+            XXXTXXX
+            XXXXXXX
+        "};
+        assert_eq!(part2(&parse(input)), 8 * 8 + 12 * (7 * 6 - 8));
     }
 }
