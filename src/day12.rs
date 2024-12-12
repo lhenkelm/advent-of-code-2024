@@ -1,7 +1,7 @@
 use std::ops::{Add, Index, IndexMut};
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashMapSeed, FxHashSet};
 #[aoc_generator(day12)]
 fn parse(input: &str) -> Grid<char> {
     let mut data = Vec::with_capacity(input.len());
@@ -25,6 +25,8 @@ fn parse(input: &str) -> Grid<char> {
 
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
+    // TODO: the current way to build this map is convoluted, I think it could be replaced
+    // using a kind of recursive traversal
     let mut first_region_occurance = Grid {
         data: vec![
             Point {
@@ -54,8 +56,39 @@ fn part1(input: &Grid<char>) -> u64 {
         // becomes the identifier of the region
         first_region_occurance[plant_pos] = plant_pos;
     }
-    let first_region_occurance = first_region_occurance;
     debug_assert_eq!(first_region_occurance.data.len(), input.data.len());
+    // now we have regions, but certain kinds of concave regions may be incorrectly split
+    // (cf. the test cases) So here we go through again to merge these fake splits.
+    let mut region_merges = FxHashMap::default();
+    for (flat_idx, plant) in input.data.iter().enumerate() {
+        let plant_pos = input.point_index(flat_idx).unwrap();
+        let plant_region = first_region_occurance[plant_pos];
+        // here we check all directions, and find regions to merge
+        for direction in DIRECTIONS {
+            let neighbour_pos = plant_pos + direction.step();
+            if let Some(neighbour_plant) = input.get(neighbour_pos) {
+                let neighbour_region = first_region_occurance[neighbour_pos];
+                if neighbour_plant == plant && neighbour_region != plant_region {
+                    region_merges
+                        .entry(plant_region)
+                        .or_insert_with(|| FxHashSet::default())
+                        .insert(neighbour_region);
+                }
+            }
+        }
+    }
+    let region_merges = region_merges;
+    for (earliest_region, fake_regions) in region_merges {
+        for fake_region in fake_regions {
+            for region in &mut first_region_occurance.data {
+                if *region == fake_region {
+                    *region = earliest_region;
+                }
+            }
+        }
+    }
+
+    let first_region_occurance = first_region_occurance;
 
     let mut perimeter_parts = Grid {
         data: vec![0u32; input.height * input.width],
