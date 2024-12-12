@@ -83,7 +83,12 @@ fn part1(input: &Grid<char>) -> u64 {
     total_price
 }
 
-/// This a naive attempt to find the regions, but its incorrect
+#[aoc(day12, part2)]
+fn part2(input: &Grid<char>) -> String {
+    todo!()
+}
+
+/// This is a naive attempt to find the regions, but its incorrect
 fn mark_regions_naive(input: &Grid<char>) -> Grid<Point> {
     let mut first_region_occurance = Grid {
         data: vec![
@@ -219,11 +224,6 @@ fn flood_fill(
     for direction in DIRECTIONS {
         flood_fill(fill_at + direction.step(), garden, region, result, visited);
     }
-}
-
-#[aoc(day12, part2)]
-fn part2(input: &Grid<char>) -> String {
-    todo!()
 }
 
 #[derive(Debug)]
