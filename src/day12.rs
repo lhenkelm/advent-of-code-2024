@@ -62,16 +62,17 @@ fn part1(input: &Grid<char>) -> u64 {
         width: input.width,
         height: input.height,
     };
-    for flat_idx in 0..first_region_occurance.data.len() {
+    for (flat_idx, plant_region) in first_region_occurance.data.iter().enumerate() {
         let plant_pos = first_region_occurance.point_index(flat_idx).unwrap();
         for direction in DIRECTIONS {
             let neighbour_pos = plant_pos + direction.step();
-            if let Some(region) = first_region_occurance.get(neighbour_pos) {
-                if *region != plant_pos {
-                    perimeter_parts[plant_pos] += 1;
+            match first_region_occurance.get(neighbour_pos) {
+                Some(neighbour_region) => {
+                    if neighbour_region != plant_region {
+                        perimeter_parts[plant_pos] += 1;
+                    }
                 }
-            } else {
-                perimeter_parts[plant_pos] += 1;
+                None => perimeter_parts[plant_pos] += 1,
             }
         }
     }
