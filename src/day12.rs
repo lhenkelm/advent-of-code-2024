@@ -332,7 +332,14 @@ fn walk_sides(
                     return false;
                 }
             }
-            match regions.get(loc - nrm_mid.step()) {
+            let s = nrm_mid.step();
+            if s.0 > loc.x as isize {
+                return false;
+            }
+            if s.1 > loc.y as isize {
+                return false;
+            }
+            match regions.get(loc - s) {
                 Some(reg) => {
                     if *reg != region {
                         return false;
