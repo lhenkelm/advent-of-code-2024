@@ -237,15 +237,22 @@ fn count_region_sides(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
     sides_counts
 }
 
-fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut FxHashSet<Side>) {
+fn walk_sides(
+    side: Side,
+    regions: &Grid<Point>,
+    region: Point,
+    reg_sides: &mut FxHashSet<Side>,
+) -> bool {
     if let Some(r) = regions.get(side.loc()) {
         if *r != region {
             // Sides are inside the region
-            return;
+            return false;
         }
+    } else {
+        return false;
     }
     if reg_sides.contains(&side) {
-        return;
+        return true;
     }
     match side {
         Side::Edge(Edge { loc, normal }) => {
@@ -253,7 +260,7 @@ fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut 
                 .get(loc + normal.step())
                 .is_some_and(|reg| *reg == region)
             {
-                return;
+                return false;
             }
             let check_orths = match normal {
                 Direction::North | Direction::South => [Direction::East, Direction::West],
@@ -261,14 +268,21 @@ fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut 
             };
 
             for check_dir in check_orths {
-                match regions.get(loc - check_dir.step()) {
+                let s = check_dir.step();
+                if s.0 > loc.x as isize {
+                    return false;
+                }
+                if s.1 > loc.y as isize {
+                    return false;
+                }
+                match regions.get(loc - s) {
                     Some(reg) => {
                         if *reg != region {
-                            return;
+                            return false;
                         }
                     }
                     None => {
-                        return;
+                        return false;
                     }
                 }
             }
@@ -283,16 +297,23 @@ fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut 
                     .get(loc + dir.step())
                     .is_some_and(|reg| *reg == region)
                 {
-                    return;
+                    return false;
                 }
-                match regions.get(loc - dir.step()) {
+                let s = dir.step();
+                if s.0 > loc.x as isize {
+                    return false;
+                }
+                if s.1 > loc.y as isize {
+                    return false;
+                }
+                match regions.get(loc - s) {
                     Some(reg) => {
                         if *reg != region {
-                            return;
+                            return false;
                         }
                     }
                     None => {
-                        return;
+                        return false;
                     }
                 }
             }
@@ -308,21 +329,22 @@ fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut 
                     .get(loc + dir.step())
                     .is_some_and(|reg| *reg == region)
                 {
-                    return;
+                    return false;
                 }
             }
             match regions.get(loc - nrm_mid.step()) {
                 Some(reg) => {
                     if *reg != region {
-                        return;
+                        return false;
                     }
                 }
                 None => {
-                    return;
+                    return false;
                 }
             }
         }
         Side::Full(_) => unreachable!(),
+        Side::InnerCorner(_) => unreachable!(),
     }
 
     reg_sides.insert(side.clone());
@@ -339,24 +361,30 @@ fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut 
     // is orthogonal to our normal/ aligned to our out-bound one
     // i.e. convex continuations
     let new_loc = side.loc() + fwd.step();
-    walk_sides(
+    if walk_sides(
         Side::Edge(Edge::with_in_normal(new_loc, out_normal)),
         regions,
         region,
         reg_sides,
-    );
-    walk_sides(
+    ) {
+        return true;
+    }
+    if walk_sides(
         Side::Corner(Corner::with_in_normal(new_loc, out_normal)),
         regions,
         region,
         reg_sides,
-    );
-    walk_sides(
+    ) {
+        return true;
+    };
+    if walk_sides(
         Side::Triple(Triple::with_in_normal(new_loc, out_normal)),
         regions,
         region,
         reg_sides,
-    );
+    ) {
+        return true;
+    };
 
     // also check along concave continuations (inner corners)
     // e.g.:
@@ -364,31 +392,47 @@ fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut 
     // #x
     // where the '#' regions boundary continues around a concave corner between
     // (0,0) and  (1,1)
-    let new_loc = new_loc + out_normal.step();
+    let past_corner = new_loc + out_normal.step();
     let turned_normal = match out_normal {
         Direction::North => Direction::West,
         Direction::East => Direction::North,
         Direction::South => Direction::East,
         Direction::West => Direction::South,
     };
-    walk_sides(
-        Side::Edge(Edge::with_in_normal(new_loc, turned_normal)),
+    // Innner corners are unlike all other boundary elements - they are purely a corner,
+    // without any edge components. Their loc can be surrounded by same-region entries
+    // on all sides, and where other corners/triples' normals may be modelled as a
+    // (series of) clockwise turn (s), inner corners two normals are related by an anti-clockwise
+    // turn
+    let inner_corner = Side::InnerCorner(Corner::with_conv_normal(new_loc, turned_normal));
+    if walk_sides(
+        Side::Edge(Edge::with_in_normal(past_corner, turned_normal)),
         regions,
         region,
         reg_sides,
-    );
-    walk_sides(
-        Side::Corner(Corner::with_in_normal(new_loc, turned_normal)),
+    ) {
+        reg_sides.insert(inner_corner);
+        return true;
+    };
+    if walk_sides(
+        Side::Corner(Corner::with_in_normal(past_corner, turned_normal)),
         regions,
         region,
         reg_sides,
-    );
-    walk_sides(
-        Side::Triple(Triple::with_in_normal(new_loc, turned_normal)),
+    ) {
+        reg_sides.insert(inner_corner);
+        return true;
+    };
+    if walk_sides(
+        Side::Triple(Triple::with_in_normal(past_corner, turned_normal)),
         regions,
         region,
         reg_sides,
-    );
+    ) {
+        reg_sides.insert(inner_corner);
+        return true;
+    };
+    false
 }
 
 #[derive(Debug)]
@@ -440,6 +484,7 @@ impl<Item> IndexMut<Point> for Grid<Item> {
 enum Side {
     Edge(Edge),
     Corner(Corner),
+    InnerCorner(Corner),
     Triple(Triple),
     Full(Full),
 }
@@ -460,6 +505,9 @@ impl Side {
                 nrm_out,
             }) => *nrm_in,
             Side::Full(full) => panic!("Side::Full::in_normal() called on {:?}!", full),
+            Side::InnerCorner(inner) => {
+                panic!("Side::InnerCorner::in_normal() called on {:?}!", inner)
+            }
         }
     }
 
@@ -477,7 +525,10 @@ impl Side {
                 nrm_mid,
                 nrm_out,
             }) => *nrm_out,
-            Side::Full(full) => panic!("Side::Full::in_normal() called on {:?}!", full),
+            Side::Full(full) => panic!("Side::Full::out_normal() called on {:?}!", full),
+            Side::InnerCorner(inner) => {
+                panic!("Side::InnerCorner:out_normal() called on {:?}!", inner)
+            }
         }
     }
 
@@ -485,6 +536,7 @@ impl Side {
         match self {
             Side::Edge(_) => 0,
             Side::Corner(_) => 1,
+            Side::InnerCorner(_) => 1,
             Side::Triple(_) => 2,
             Side::Full(_) => 4,
         }
@@ -495,6 +547,7 @@ impl Side {
             Side::Corner(c) => c.loc,
             Side::Triple(t) => t.loc,
             Side::Full(f) => f.loc,
+            Side::InnerCorner(inner) => panic!("Side::InnerCorner::loc() called on {:?}!", inner),
         }
     }
 }
@@ -548,6 +601,20 @@ impl Corner {
             Direction::East => (normal, Direction::South),
             Direction::South => (normal, Direction::West),
             Direction::West => (normal, Direction::North),
+        };
+        Corner {
+            loc,
+            nrm_in,
+            nrm_out,
+        }
+    }
+
+    fn with_conv_normal(loc: Point, normal: Direction) -> Corner {
+        let (nrm_in, nrm_out) = match normal {
+            Direction::North => (normal, Direction::West),
+            Direction::East => (normal, Direction::North),
+            Direction::South => (normal, Direction::East),
+            Direction::West => (normal, Direction::South),
         };
         Corner {
             loc,
@@ -632,6 +699,9 @@ impl Sub<(isize, isize)> for Point {
     type Output = Point;
 
     fn sub(self, (dx, dy): (isize, isize)) -> Self::Output {
+        assert!(dx <= self.x as isize);
+        assert!(dy <= self.y as isize);
+
         Point {
             x: (self.x as isize - dx) as usize,
             y: (self.y as isize - dy) as usize,
