@@ -37,7 +37,7 @@ fn part1(input: &Grid<char>) -> u64 {
 }
 
 #[aoc(day12, part2)]
-fn part2(input: &Grid<char>) -> String {
+fn part2(input: &Grid<char>) -> u64 {
     todo!()
 }
 
@@ -450,7 +450,42 @@ mod tests {
     }
 
     #[ignore]
-    fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
+    fn part2_example_small() {
+        assert_eq!(part2(&parse(EXAMPLE_INPUT_SMALL)), 80);
+    }
+
+    #[ignore]
+    fn part2_example_islands() {
+        assert_eq!(part2(&parse(EXAMPLE_INPUT_ISLANDS)), 436);
+    }
+
+    #[ignore]
+    fn part2_example_large() {
+        assert_eq!(part2(&parse(EXAMPLE_INPUT_LARGE)), 1206);
+    }
+
+    #[ignore]
+    fn part2_example_EXE() {
+        let input = indoc! {"
+            EEEEE
+            EXXXX
+            EEEEE
+            EXXXX
+            EEEEE
+        "};
+        assert_eq!(part2(&parse(input)), 204);
+    }
+
+    #[ignore]
+    fn part2_example_B_islands_diag() {
+        let input = indoc! {"
+            AAAAAA
+            AAABBA
+            AAABBA
+            ABBAAA
+            ABBAAA
+            AAAAAA
+        "};
+        assert_eq!(part2(&parse(input)), 368);
     }
 }
