@@ -290,6 +290,17 @@ mod tests {
         assert_eq!(part1(&parse(input)), 1 * 4 + 3 * (3 + 3 + 2));
     }
 
+    #[test]
+    fn part1_concave_diag() {
+        let input = indoc! {"
+            123-
+            45--
+            6--7
+            --89
+        "};
+        assert_eq!(part1(&parse(input)), 9 * 4 + 7 * (2 * 3 + 5 * 2));
+    }
+
     #[ignore]
     fn part2_example() {
         assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
