@@ -44,7 +44,7 @@ fn part2(input: &Grid<char>) -> u64 {
 
     let mut total_price = 0;
     for (region, area) in region_areas {
-        total_price += area * dbg!(region_side_counts[dbg!(&region)]);
+        total_price += area * region_side_counts[&region];
     }
     total_price
 }
@@ -230,7 +230,7 @@ fn count_region_sides(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
     }
 
     let mut sides_counts = FxHashMap::default();
-    for (region, reg_sides) in dbg!(sides) {
+    for (region, reg_sides) in sides {
         *sides_counts.entry(region).or_insert(0u64) +=
             reg_sides.iter().map(|side| side.corners()).sum::<u64>();
     }
@@ -851,7 +851,7 @@ mod tests {
             EXXXX
             EEEEE
         "};
-        assert_eq!(part2(&parse(input)), 204);
+        assert_eq!(part2(&parse(input)), 236);
     }
 
     #[test]
