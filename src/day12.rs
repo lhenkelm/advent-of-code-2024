@@ -26,6 +26,22 @@ fn parse(input: &str) -> Grid<char> {
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
     let first_region_occurance = mark_regions_flood_fill(&input);
+    // it seems the cause is somehow non-local
+    if false {
+        let wrong = mark_regions_naive(input);
+        for flat_index in (0..input.data.len()).take(500) {
+            if first_region_occurance.data[flat_index] != wrong.data[flat_index] {
+                let pt = dbg!(input.point_index(flat_index).unwrap());
+                for y in (pt.y - 3)..(pt.y + 4) {
+                    for x in (pt.x - 3)..(pt.x + 4) {
+                        let p = input[pt + (x as isize, y as isize)];
+                        print!("{}", p);
+                    }
+                    println!();
+                }
+            }
+        }
+    }
     let mut perimeter_parts = Grid {
         data: vec![0u32; input.height * input.width],
         width: input.width,
