@@ -24,7 +24,31 @@ fn parse(input: &str) -> Grid<char> {
 
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
-    todo!()
+    let mut first_region_occurance = Grid {
+        data: Vec::with_capacity(input.height * input.width),
+        width: input.width,
+        height: input.height,
+    };
+    'outer: for (flat_idx, &plant) in input.data.iter().enumerate() {
+        let plant_pos = input.point_index(flat_idx).unwrap();
+        // only check back the directions we have already traversed through
+        for direction in [Direction::West, Direction::North] {
+            let neighbour_pos = plant_pos + direction.step();
+            if let Some(neighbour_plant) = input.get(neighbour_pos) {
+                if *neighbour_plant != plant {
+                    continue;
+                }
+                let first_plant_pos = first_region_occurance[neighbour_pos];
+                first_region_occurance[plant_pos] = first_plant_pos;
+                continue 'outer;
+            }
+        }
+        // if it is disconnected from its kind, its a new region, and its location
+        // becomes the identtifier of the region
+        first_region_occurance[plant_pos] = plant_pos;
+    }
+    let first_region_occurance = first_region_occurance;
+    0
 }
 
 #[aoc(day12, part2)]
@@ -103,19 +127,19 @@ enum Direction {
 impl Direction {
     fn step(&self) -> (isize, isize) {
         match self {
+            Direction::West => (-1, 0),
             Direction::North => (0, -1),
             Direction::East => (1, 0),
             Direction::South => (0, 1),
-            Direction::West => (-1, 0),
         }
     }
 }
 
 const DIRECTIONS: [Direction; 4] = [
-    Direction::North,
     Direction::East,
     Direction::South,
     Direction::West,
+    Direction::North,
 ];
 #[cfg(test)]
 mod tests {
