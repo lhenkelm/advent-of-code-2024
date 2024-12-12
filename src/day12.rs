@@ -26,7 +26,13 @@ fn parse(input: &str) -> Grid<char> {
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
     let mut first_region_occurance = Grid {
-        data: Vec::with_capacity(input.height * input.width),
+        data: vec![
+            Point {
+                x: input.width,
+                y: input.height
+            };
+            input.height * input.width
+        ],
         width: input.width,
         height: input.height,
     };
