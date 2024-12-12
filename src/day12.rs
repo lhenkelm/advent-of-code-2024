@@ -103,6 +103,7 @@ fn part2(input: &Grid<char>) -> String {
     todo!()
 }
 
+#[derive(Debug)]
 struct Grid<Item> {
     data: Vec<Item>,
     width: usize,
@@ -133,7 +134,7 @@ impl<Item> Grid<Item> {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 struct Point {
     x: usize,
     y: usize,
@@ -243,6 +244,15 @@ mod tests {
             AA
         "};
         assert_eq!(part1(&parse(input)), 32);
+    }
+
+    #[test]
+    fn part1_concave_corner() {
+        let input = indoc! {"
+            ez
+            zz
+        "};
+        assert_eq!(part1(&parse(input)), 1 * 4 + 3 * (3 + 3 + 2));
     }
 
     #[ignore]
