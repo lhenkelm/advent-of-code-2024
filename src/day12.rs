@@ -174,6 +174,153 @@ impl<Item> Grid<Item> {
     }
 }
 
+impl<Item> Index<Point> for Grid<Item> {
+    type Output = Item;
+
+    fn index(&self, point: Point) -> &Self::Output {
+        &self.data[point.y * self.width + point.x]
+    }
+}
+
+impl<Item> IndexMut<Point> for Grid<Item> {
+    fn index_mut(&mut self, point: Point) -> &mut Self::Output {
+        &mut self.data[point.y * self.width + point.x]
+    }
+}
+
+#[derive(Debug)]
+enum Side {
+    Edge(Edge),
+    Corner(Corner),
+    Triple(Triple),
+    Full(Full),
+}
+
+impl Side {
+    fn in_normal(&self) -> Direction {
+        match self {
+            Side::Edge(Edge { loc, normal }) => *normal,
+            Side::Corner(Corner {
+                loc,
+                nrm_in,
+                nrm_out,
+            }) => *nrm_in,
+            Side::Triple(Triple {
+                loc,
+                nrm_in,
+                nrm_mid,
+                nrm_out,
+            }) => *nrm_in,
+            Side::Full(full) => panic!("Side::Full::in_normal() called on {:?}!", full),
+        }
+    }
+
+    fn out_normal(&self) -> Direction {
+        match self {
+            Side::Edge(Edge { loc, normal }) => *normal,
+            Side::Corner(Corner {
+                loc,
+                nrm_in,
+                nrm_out,
+            }) => *nrm_out,
+            Side::Triple(Triple {
+                loc,
+                nrm_in,
+                nrm_mid,
+                nrm_out,
+            }) => *nrm_out,
+            Side::Full(full) => panic!("Side::Full::in_normal() called on {:?}!", full),
+        }
+    }
+
+    fn corners(&self) -> u64 {
+        match self {
+            Side::Edge(_) => 0,
+            Side::Corner(_) => 1,
+            Side::Triple(_) => 2,
+            Side::Full(_) => 4,
+        }
+    }
+}
+
+/// Part of a straight-line edge
+///
+/// E.g:
+///
+/// --###
+/// --###
+/// --###
+///
+/// Here, the central point is an Edge with
+/// normal: West
+/// (from the point of view of the '#' region)
+#[derive(Debug)]
+struct Edge {
+    loc: Point,
+    normal: Direction,
+}
+
+/// Part of two edges: a corner
+///
+/// E.g:
+///
+/// -----
+/// --###
+/// --###
+///
+/// Here, the central point is an Corner with
+/// nrm_in: West
+/// nrm_out: North
+/// (from the point of view of the '#' region)
+/// The '-' region has a matching "inwards" Corner
+/// at {x: 1, y: 0} with
+/// nrm_in: South
+/// nrm_out: East
+#[derive(Debug)]
+struct Corner {
+    loc: Point,
+    nrm_in: Direction,
+    nrm_out: Direction,
+}
+
+/// Maximum corner for non-singleton regions: Triple(-edge)
+///
+/// E.g.:
+///
+/// ---##
+/// --###
+/// ---##
+///
+/// Here, the central point is a corner with
+/// nrm_in: South
+/// nrm_mid: West
+/// nrm_out: North
+/// (from the point of view of the '#' region)
+///
+/// It seems that an alternative view of the Triple is as
+/// two Corners sharing a location, with
+/// (nrm_in, nrm_mid) and (nrm_mid, nrm_out)
+/// as their resepective incoming and outgoing normals.
+#[derive(Debug)]
+struct Triple {
+    loc: Point,
+    nrm_in: Direction,
+    nrm_mid: Direction,
+    nrm_out: Direction,
+}
+
+/// A single isolated point is a "four-edge" corner
+///
+/// E.g.
+///
+/// -----
+/// --#--
+/// -----
+#[derive(Debug)]
+struct Full {
+    loc: Point,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 struct Point {
     x: usize,
@@ -191,21 +338,7 @@ impl Add<(isize, isize)> for Point {
     }
 }
 
-impl<Item> Index<Point> for Grid<Item> {
-    type Output = Item;
-
-    fn index(&self, point: Point) -> &Self::Output {
-        &self.data[point.y * self.width + point.x]
-    }
-}
-
-impl<Item> IndexMut<Point> for Grid<Item> {
-    fn index_mut(&mut self, point: Point) -> &mut Self::Output {
-        &mut self.data[point.y * self.width + point.x]
-    }
-}
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Direction {
     North,
     East,
