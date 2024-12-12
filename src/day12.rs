@@ -301,6 +301,16 @@ mod tests {
         assert_eq!(part1(&parse(input)), 9 * 4 + 7 * (2 * 3 + 5 * 2));
     }
 
+    #[test]
+    fn part1_concave_u() {
+        let input = indoc! {"
+            #..#
+            #..#
+            ####
+        "};
+        assert_eq!(part1(&parse(input)), 32 + 8 * (4 + 2 * 3 + 3 * 2 + 2));
+    }
+
     #[ignore]
     fn part2_example() {
         assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
