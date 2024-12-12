@@ -42,39 +42,9 @@ fn part1(input: &Grid<char>) -> u64 {
             }
         }
     }
-    let mut perimeter_parts = Grid {
-        data: vec![0u32; input.height * input.width],
-        width: input.width,
-        height: input.height,
-    };
-    for (flat_idx, plant_region) in first_region_occurance.data.iter().enumerate() {
-        let plant_pos = first_region_occurance.point_index(flat_idx).unwrap();
-        for direction in DIRECTIONS {
-            let neighbour_pos = plant_pos + direction.step();
-            match first_region_occurance.get(neighbour_pos) {
-                Some(neighbour_region) => {
-                    if neighbour_region != plant_region {
-                        perimeter_parts[plant_pos] += 1;
-                    }
-                }
-                None => perimeter_parts[plant_pos] += 1,
-            }
-        }
-    }
-    let perimeter_parts = perimeter_parts;
 
-    let mut region_areas = FxHashMap::default();
-    for region in first_region_occurance.data.iter() {
-        *region_areas.entry(*region).or_insert(0u64) += 1;
-    }
-    let region_areas = region_areas;
-
-    let mut region_perimeters = FxHashMap::default();
-    for flat_idx in 0..perimeter_parts.data.len() {
-        let region = first_region_occurance.data[flat_idx];
-        *region_perimeters.entry(region).or_insert(0u64) += perimeter_parts.data[flat_idx] as u64;
-    }
-    let region_perimeters = region_perimeters;
+    let region_areas = measure_region_areas(&first_region_occurance);
+    let region_perimeters = measure_region_perimeters(&first_region_occurance);
 
     let mut total_price = 0;
     for (region, area) in region_areas {
@@ -224,6 +194,44 @@ fn flood_fill(
     for direction in DIRECTIONS {
         flood_fill(fill_at + direction.step(), garden, region, result, visited);
     }
+}
+
+fn measure_region_areas(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
+    let mut region_areas = FxHashMap::default();
+    for region in regions.data.iter() {
+        *region_areas.entry(*region).or_insert(0u64) += 1;
+    }
+    region_areas
+}
+
+fn measure_region_perimeters(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
+    let mut perimeter_parts = Grid {
+        data: vec![0u32; regions.height * regions.width],
+        width: regions.width,
+        height: regions.height,
+    };
+    for (flat_idx, plant_region) in regions.data.iter().enumerate() {
+        let plant_pos = regions.point_index(flat_idx).unwrap();
+        for direction in DIRECTIONS {
+            let neighbour_pos = plant_pos + direction.step();
+            match regions.get(neighbour_pos) {
+                Some(neighbour_region) => {
+                    if neighbour_region != plant_region {
+                        perimeter_parts[plant_pos] += 1;
+                    }
+                }
+                None => perimeter_parts[plant_pos] += 1,
+            }
+        }
+    }
+    let perimeter_parts = perimeter_parts;
+
+    let mut region_perimeters = FxHashMap::default();
+    for flat_idx in 0..perimeter_parts.data.len() {
+        let region = regions.data[flat_idx];
+        *region_perimeters.entry(region).or_insert(0u64) += perimeter_parts.data[flat_idx] as u64;
+    }
+    region_perimeters
 }
 
 #[derive(Debug)]
