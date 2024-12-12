@@ -25,9 +25,9 @@ fn parse(input: &str) -> Grid<char> {
 
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
-    let first_region_occurance = mark_regions_flood_fill(&input);
-    let region_areas = measure_region_areas(&first_region_occurance);
-    let region_perimeters = measure_region_perimeters(&first_region_occurance);
+    let regions = mark_regions_flood_fill(&input);
+    let region_areas = measure_region_areas(&regions);
+    let region_perimeters = measure_region_perimeters(&regions);
 
     let mut total_price = 0;
     for (region, area) in region_areas {
