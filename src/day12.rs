@@ -48,27 +48,19 @@ fn part2(input: &Grid<char>) -> String {
 /// in the connected region at which the plant can be found.
 fn mark_regions_flood_fill(garden_map: &Grid<char>) -> Grid<Point> {
     let mut result = Grid {
-        data: vec![
-            Point {
-                x: garden_map.width,
-                y: garden_map.height
-            };
-            garden_map.data.len()
-        ],
-        width: garden_map.width,
-        height: garden_map.height,
-    };
-    // TODO: could promote result to Grid<Option<Point>>, removing the need for a second grid.
-    let mut visited = Grid {
-        data: vec![false; garden_map.data.len()],
+        data: vec![None; garden_map.data.len()],
         width: garden_map.width,
         height: garden_map.height,
     };
     for flat_idx in 0..garden_map.data.len() {
         let plant_pos = garden_map.point_index(flat_idx).unwrap();
-        flood_fill(plant_pos, garden_map, plant_pos, &mut result, &mut visited);
+        flood_fill(plant_pos, garden_map, plant_pos, &mut result);
     }
-    result
+    Grid {
+        data: result.data.iter().map(|opt_pt| opt_pt.unwrap()).collect(),
+        width: result.width,
+        height: result.height,
+    }
 }
 
 /// Implements the recursive step for flood-fill
@@ -91,26 +83,25 @@ fn flood_fill(
     fill_at: Point,
     garden: &Grid<char>,
     region: Point,
-    result: &mut Grid<Point>,
-    visited: &mut Grid<bool>,
+    result: &mut Grid<Option<Point>>,
 ) {
-    match visited.get(fill_at) {
-        Some(dunnit) => {
-            if *dunnit {
-                return;
-            }
-        }
+    match result.get(fill_at) {
         None => {
+            // out-of-bounds
             return;
         }
+        Some(Some(_)) => {
+            // already visited
+            return;
+        }
+        Some(None) => (), // in-bounds, not yet visited
     }
     if garden[fill_at] != garden[region] {
         return;
     }
-    result[fill_at] = region;
-    visited[fill_at] = true;
+    result[fill_at] = Some(region);
     for direction in DIRECTIONS {
-        flood_fill(fill_at + direction.step(), garden, region, result, visited);
+        flood_fill(fill_at + direction.step(), garden, region, result);
     }
 }
 
