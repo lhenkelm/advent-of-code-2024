@@ -233,6 +233,15 @@ mod tests {
         assert_eq!(part1(&parse(EXAMPLE_INPUT_LARGE)), 1930);
     }
 
+    #[test]
+    fn part1_mono_region() {
+        let input = indoc! {"
+            AA
+            AA
+        "};
+        assert_eq!(part1(&parse(input)), 32);
+    }
+
     #[ignore]
     fn part2_example() {
         assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
