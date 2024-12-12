@@ -1,7 +1,7 @@
 use std::ops::{Add, Index, IndexMut};
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use rustc_hash::{FxHashMap, FxHashMapSeed, FxHashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 #[aoc_generator(day12)]
 fn parse(input: &str) -> Grid<char> {
     let mut data = Vec::with_capacity(input.len());
@@ -25,7 +25,7 @@ fn parse(input: &str) -> Grid<char> {
 
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
-    let first_region_occurance = mark_regions_naive(&input);
+    let first_region_occurance = mark_regions_flood_fill(&input);
     let mut perimeter_parts = Grid {
         data: vec![0u32; input.height * input.width],
         width: input.width,
@@ -67,9 +67,8 @@ fn part1(input: &Grid<char>) -> u64 {
     total_price
 }
 
+/// This a naive attempt to find the regions, but its incorrect
 fn mark_regions_naive(input: &Grid<char>) -> Grid<Point> {
-    // TODO: the current way to build this map is convoluted, I think it could be replaced
-    // using a kind of recursive traversal
     let mut first_region_occurance = Grid {
         data: vec![
             Point {
@@ -131,6 +130,79 @@ fn mark_regions_naive(input: &Grid<char>) -> Grid<Point> {
         }
     }
     first_region_occurance
+}
+
+/// Mark connected regions using recursive flood-fill
+///
+/// The input is the map from points to the plant type at the point.
+/// The output is the map from points to the most north-westerly point
+/// in the connected region at which the plant can be found.
+fn mark_regions_flood_fill(garden_map: &Grid<char>) -> Grid<Point> {
+    let mut result = Grid {
+        data: vec![
+            Point {
+                x: garden_map.width,
+                y: garden_map.height
+            };
+            garden_map.data.len()
+        ],
+        width: garden_map.width,
+        height: garden_map.height,
+    };
+    // TODO: could promote result to Grid<Option<Point>>, removing the need for a second grid.
+    let mut visited = Grid {
+        data: vec![false; garden_map.data.len()],
+        width: garden_map.width,
+        height: garden_map.height,
+    };
+    for flat_idx in 0..garden_map.data.len() {
+        let plant_pos = garden_map.point_index(flat_idx).unwrap();
+        flood_fill(plant_pos, garden_map, plant_pos, &mut result, &mut visited);
+    }
+    result
+}
+
+/// Implements the recursive step for flood-fill
+///
+/// Arguments:
+///     - `fill_at`:
+///         The point being investigated at the current step
+///     - `garden`:
+///         The map of points to plant types
+///     - `region`:
+///         The identifying point for this region of plants of it's type.
+///         (in the first call, `region == fill_at`)
+///     - `result`:
+///         The map of points to region-identifying points. If the plant at `fill_at
+///         matches that at region and is connected to `region`, `result` at `fill_at`
+///         will be set to `region`. Otherwise it will be unchanged.
+///     - `visited`:
+///         A map of points to a flag indicating whether the point has already been visited.  
+fn flood_fill(
+    fill_at: Point,
+    garden: &Grid<char>,
+    region: Point,
+    result: &mut Grid<Point>,
+    visited: &mut Grid<bool>,
+) {
+    match visited.get(fill_at) {
+        Some(dunnit) => {
+            if *dunnit {
+                return;
+            }
+        }
+        None => {
+            return;
+        }
+    }
+    if garden[fill_at] != garden[region] {
+        return;
+    }
+    result[fill_at] = region;
+    visited[fill_at] = true;
+    for direction in DIRECTIONS {
+        flood_fill(fill_at + direction.step(), garden, region, result, visited);
+    }
 }
 
 #[aoc(day12, part2)]
