@@ -1,4 +1,4 @@
-use std::ops::{Add, Index, IndexMut};
+use std::ops::{Add, Index, IndexMut, Sub};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -38,7 +38,15 @@ fn part1(input: &Grid<char>) -> u64 {
 
 #[aoc(day12, part2)]
 fn part2(input: &Grid<char>) -> u64 {
-    todo!()
+    let regions = mark_regions_flood_fill(&input);
+    let region_areas = measure_region_areas(&regions);
+    let region_side_counts = count_region_sides(&regions);
+
+    let mut total_price = 0;
+    for (region, area) in region_areas {
+        total_price += area * dbg!(region_side_counts[dbg!(&region)]);
+    }
+    total_price
 }
 
 /// Mark connected regions using recursive flood-fill
@@ -143,6 +151,246 @@ fn measure_region_perimeters(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
     region_perimeters
 }
 
+fn count_region_sides(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
+    let mut sides = FxHashMap::default();
+    for (flat_idx, plant_region) in regions.data.iter().enumerate() {
+        let plant_pos = regions.point_index(flat_idx).unwrap();
+        let region = regions[plant_pos];
+        let mut region_sides = sides.entry(region).or_insert_with(|| FxHashSet::default());
+        let normals: Vec<&Direction> = DIRECTIONS
+            .iter()
+            .filter(|&d| match regions.get(plant_pos + d.step()) {
+                None => true,
+                Some(reg) => *reg != region,
+            })
+            .collect();
+        let initial_side = match normals.len() {
+            0 => {
+                continue;
+            }
+            1 => Side::Edge(Edge {
+                loc: plant_pos,
+                normal: *normals[0],
+            }),
+            2 => {
+                match &normals[0..2] {
+                    // corners
+                    [Direction::North, Direction::East] => Side::Corner(Corner {
+                        loc: plant_pos,
+                        nrm_in: Direction::North,
+                        nrm_out: Direction::East,
+                    }),
+                    [Direction::East, Direction::South] => Side::Corner(Corner {
+                        loc: plant_pos,
+                        nrm_in: Direction::East,
+                        nrm_out: Direction::South,
+                    }),
+                    [Direction::South, Direction::West] => Side::Corner(Corner {
+                        loc: plant_pos,
+                        nrm_in: Direction::South,
+                        nrm_out: Direction::West,
+                    }),
+                    [Direction::North, Direction::West] => Side::Corner(Corner {
+                        loc: plant_pos,
+                        nrm_in: Direction::West,
+                        nrm_out: Direction::North,
+                    }),
+                    // overlapping edges (width one region)
+                    [Direction::North, Direction::South] => Side::Edge(Edge {
+                        loc: plant_pos,
+                        normal: Direction::North,
+                    }),
+                    [Direction::East, Direction::West] => Side::Edge(Edge {
+                        loc: plant_pos,
+                        normal: Direction::West,
+                    }),
+                    _ => unreachable!(),
+                }
+            }
+            3 => {
+                let (nrm_in, nrm_mid, nrm_out) = match &normals[0..3] {
+                    // clockwise order is assured by DIRECTIONS order
+                    [&i, &m, &o] => (i, m, o),
+                    _ => unreachable!(),
+                };
+                Side::Triple(Triple {
+                    loc: plant_pos,
+                    nrm_in,
+                    nrm_mid,
+                    nrm_out,
+                })
+            }
+            4 => {
+                debug_assert!(region_sides.insert(Side::Full(Full { loc: plant_pos })));
+                continue;
+            }
+            _ => unreachable!(),
+        };
+        walk_sides(initial_side, regions, region, &mut region_sides);
+    }
+
+    let mut sides_counts = FxHashMap::default();
+    for (region, reg_sides) in dbg!(sides) {
+        *sides_counts.entry(region).or_insert(0u64) +=
+            reg_sides.iter().map(|side| side.corners()).sum::<u64>();
+    }
+    sides_counts
+}
+
+fn walk_sides(side: Side, regions: &Grid<Point>, region: Point, reg_sides: &mut FxHashSet<Side>) {
+    if let Some(r) = regions.get(side.loc()) {
+        if *r != region {
+            // Sides are inside the region
+            return;
+        }
+    }
+    if reg_sides.contains(&side) {
+        return;
+    }
+    match side {
+        Side::Edge(Edge { loc, normal }) => {
+            if regions
+                .get(loc + normal.step())
+                .is_some_and(|reg| *reg == region)
+            {
+                return;
+            }
+            let check_orths = match normal {
+                Direction::North | Direction::South => [Direction::East, Direction::West],
+                Direction::East | Direction::West => [Direction::North, Direction::South],
+            };
+
+            for check_dir in check_orths {
+                match regions.get(loc - check_dir.step()) {
+                    Some(reg) => {
+                        if *reg != region {
+                            return;
+                        }
+                    }
+                    None => {
+                        return;
+                    }
+                }
+            }
+        }
+        Side::Corner(Corner {
+            loc,
+            nrm_in,
+            nrm_out,
+        }) => {
+            for dir in [nrm_in, nrm_out] {
+                if regions
+                    .get(loc + dir.step())
+                    .is_some_and(|reg| *reg == region)
+                {
+                    return;
+                }
+                match regions.get(loc - dir.step()) {
+                    Some(reg) => {
+                        if *reg != region {
+                            return;
+                        }
+                    }
+                    None => {
+                        return;
+                    }
+                }
+            }
+        }
+        Side::Triple(Triple {
+            loc,
+            nrm_in,
+            nrm_mid,
+            nrm_out,
+        }) => {
+            for dir in [nrm_in, nrm_mid, nrm_out] {
+                if regions
+                    .get(loc + dir.step())
+                    .is_some_and(|reg| *reg == region)
+                {
+                    return;
+                }
+            }
+            match regions.get(loc - nrm_mid.step()) {
+                Some(reg) => {
+                    if *reg != region {
+                        return;
+                    }
+                }
+                None => {
+                    return;
+                }
+            }
+        }
+        Side::Full(_) => unreachable!(),
+    }
+
+    reg_sides.insert(side.clone());
+
+    // check the different next boundary segments
+    let out_normal = side.out_normal();
+    let fwd = match out_normal {
+        Direction::North => Direction::East,
+        Direction::East => Direction::South,
+        Direction::South => Direction::West,
+        Direction::West => Direction::North,
+    };
+    // a) Edges, corners, or triples where the in bound direction
+    // is orthogonal to our normal/ aligned to our out-bound one
+    // i.e. convex continuations
+    let new_loc = side.loc() + fwd.step();
+    walk_sides(
+        Side::Edge(Edge::with_in_normal(new_loc, out_normal)),
+        regions,
+        region,
+        reg_sides,
+    );
+    walk_sides(
+        Side::Corner(Corner::with_in_normal(new_loc, out_normal)),
+        regions,
+        region,
+        reg_sides,
+    );
+    walk_sides(
+        Side::Triple(Triple::with_in_normal(new_loc, out_normal)),
+        regions,
+        region,
+        reg_sides,
+    );
+
+    // also check along concave continuations (inner corners)
+    // e.g.:
+    // ##
+    // #x
+    // where the '#' regions boundary continues around a concave corner between
+    // (0,0) and  (1,1)
+    let new_loc = new_loc + out_normal.step();
+    let turned_normal = match out_normal {
+        Direction::North => Direction::West,
+        Direction::East => Direction::North,
+        Direction::South => Direction::East,
+        Direction::West => Direction::South,
+    };
+    walk_sides(
+        Side::Edge(Edge::with_in_normal(new_loc, turned_normal)),
+        regions,
+        region,
+        reg_sides,
+    );
+    walk_sides(
+        Side::Corner(Corner::with_in_normal(new_loc, turned_normal)),
+        regions,
+        region,
+        reg_sides,
+    );
+    walk_sides(
+        Side::Triple(Triple::with_in_normal(new_loc, turned_normal)),
+        regions,
+        region,
+        reg_sides,
+    );
+}
+
 #[derive(Debug)]
 struct Grid<Item> {
     data: Vec<Item>,
@@ -188,7 +436,7 @@ impl<Item> IndexMut<Point> for Grid<Item> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Side {
     Edge(Edge),
     Corner(Corner),
@@ -241,6 +489,14 @@ impl Side {
             Side::Full(_) => 4,
         }
     }
+    fn loc(&self) -> Point {
+        match self {
+            Side::Edge(e) => e.loc,
+            Side::Corner(c) => c.loc,
+            Side::Triple(t) => t.loc,
+            Side::Full(f) => f.loc,
+        }
+    }
 }
 
 /// Part of a straight-line edge
@@ -254,10 +510,16 @@ impl Side {
 /// Here, the central point is an Edge with
 /// normal: West
 /// (from the point of view of the '#' region)
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Edge {
     loc: Point,
     normal: Direction,
+}
+
+impl Edge {
+    fn with_in_normal(loc: Point, normal: Direction) -> Edge {
+        Edge { loc, normal }
+    }
 }
 
 /// Part of two edges: a corner
@@ -272,15 +534,27 @@ struct Edge {
 /// nrm_in: West
 /// nrm_out: North
 /// (from the point of view of the '#' region)
-/// The '-' region has a matching "inwards" Corner
-/// at {x: 1, y: 0} with
-/// nrm_in: South
-/// nrm_out: East
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Corner {
     loc: Point,
     nrm_in: Direction,
     nrm_out: Direction,
+}
+
+impl Corner {
+    fn with_in_normal(loc: Point, normal: Direction) -> Corner {
+        let (nrm_in, nrm_out) = match normal {
+            Direction::North => (normal, Direction::East),
+            Direction::East => (normal, Direction::South),
+            Direction::South => (normal, Direction::West),
+            Direction::West => (normal, Direction::North),
+        };
+        Corner {
+            loc,
+            nrm_in,
+            nrm_out,
+        }
+    }
 }
 
 /// Maximum corner for non-singleton regions: Triple(-edge)
@@ -301,12 +575,28 @@ struct Corner {
 /// two Corners sharing a location, with
 /// (nrm_in, nrm_mid) and (nrm_mid, nrm_out)
 /// as their resepective incoming and outgoing normals.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Triple {
     loc: Point,
     nrm_in: Direction,
     nrm_mid: Direction,
     nrm_out: Direction,
+}
+impl Triple {
+    fn with_in_normal(loc: Point, normal: Direction) -> Triple {
+        let (nrm_in, nrm_mid, nrm_out) = match normal {
+            Direction::North => (normal, Direction::East, Direction::South),
+            Direction::East => (normal, Direction::South, Direction::West),
+            Direction::South => (normal, Direction::West, Direction::North),
+            Direction::West => (normal, Direction::North, Direction::East),
+        };
+        Triple {
+            loc,
+            nrm_in,
+            nrm_mid,
+            nrm_out,
+        }
+    }
 }
 
 /// A single isolated point is a "four-edge" corner
@@ -316,7 +606,7 @@ struct Triple {
 /// -----
 /// --#--
 /// -----
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Full {
     loc: Point,
 }
@@ -338,7 +628,18 @@ impl Add<(isize, isize)> for Point {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+impl Sub<(isize, isize)> for Point {
+    type Output = Point;
+
+    fn sub(self, (dx, dy): (isize, isize)) -> Self::Output {
+        Point {
+            x: (self.x as isize - dx) as usize,
+            y: (self.y as isize - dy) as usize,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Direction {
     North,
     East,
@@ -357,10 +658,10 @@ impl Direction {
 }
 
 const DIRECTIONS: [Direction; 4] = [
+    Direction::North,
     Direction::East,
     Direction::South,
     Direction::West,
-    Direction::North,
 ];
 #[cfg(test)]
 mod tests {
@@ -449,22 +750,22 @@ mod tests {
         assert_eq!(part1(&parse(input)), 32 + 8 * (4 + 2 * 3 + 3 * 2 + 2));
     }
 
-    #[ignore]
+    #[test]
     fn part2_example_small() {
         assert_eq!(part2(&parse(EXAMPLE_INPUT_SMALL)), 80);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example_islands() {
         assert_eq!(part2(&parse(EXAMPLE_INPUT_ISLANDS)), 436);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example_large() {
         assert_eq!(part2(&parse(EXAMPLE_INPUT_LARGE)), 1206);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example_EXE() {
         let input = indoc! {"
             EEEEE
@@ -476,7 +777,7 @@ mod tests {
         assert_eq!(part2(&parse(input)), 204);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example_B_islands_diag() {
         let input = indoc! {"
             AAAAAA
@@ -487,5 +788,22 @@ mod tests {
             AAAAAA
         "};
         assert_eq!(part2(&parse(input)), 368);
+    }
+
+    #[test]
+    fn part2_example_minimal() {
+        let input = indoc! {"
+            a
+        "};
+        assert_eq!(part2(&parse(input)), 4);
+    }
+
+    #[test]
+    fn part2_example_minimal_corner() {
+        let input = indoc! {"
+            ab
+            bb
+        "};
+        assert_eq!(part2(&parse(input)), 4 + 3 * 6);
     }
 }
