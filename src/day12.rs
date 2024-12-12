@@ -70,6 +70,8 @@ fn part1(input: &Grid<char>) -> u64 {
                 if *region != plant_pos {
                     perimeter_parts[plant_pos] += 1;
                 }
+            } else {
+                perimeter_parts[plant_pos] += 1;
             }
         }
     }
