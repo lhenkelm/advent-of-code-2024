@@ -1,6 +1,7 @@
 use std::ops::{Add, Index, IndexMut};
 
 use aoc_runner_derive::{aoc, aoc_generator};
+use rustc_hash::FxHashMap;
 #[aoc_generator(day12)]
 fn parse(input: &str) -> Grid<char> {
     let mut data = Vec::with_capacity(input.len());
@@ -44,11 +45,48 @@ fn part1(input: &Grid<char>) -> u64 {
             }
         }
         // if it is disconnected from its kind, its a new region, and its location
-        // becomes the identtifier of the region
+        // becomes the identifier of the region
         first_region_occurance[plant_pos] = plant_pos;
     }
     let first_region_occurance = first_region_occurance;
-    0
+    debug_assert_eq!(first_region_occurance.data.len(), input.data.len());
+
+    let mut perimeter_parts = Grid {
+        data: vec![0u32; input.height * input.width],
+        width: input.width,
+        height: input.height,
+    };
+    for flat_idx in 0..first_region_occurance.data.len() {
+        let plant_pos = first_region_occurance.point_index(flat_idx).unwrap();
+        for direction in DIRECTIONS {
+            let neighbour_pos = plant_pos + direction.step();
+            if let Some(region) = first_region_occurance.get(neighbour_pos) {
+                if *region != plant_pos {
+                    perimeter_parts[plant_pos] += 1;
+                }
+            }
+        }
+    }
+    let perimeter_parts = perimeter_parts;
+
+    let mut region_areas = FxHashMap::default();
+    for region in first_region_occurance.data.iter() {
+        *region_areas.entry(*region).or_insert(0u64) += 1;
+    }
+    let region_areas = region_areas;
+
+    let mut region_perimeters = FxHashMap::default();
+    for flat_idx in 0..perimeter_parts.data.len() {
+        let region = first_region_occurance.data[flat_idx];
+        *region_perimeters.entry(region).or_insert(0u64) += perimeter_parts.data[flat_idx] as u64;
+    }
+    let region_perimeters = region_perimeters;
+
+    let mut total_price = 0;
+    for (region, area) in region_areas {
+        total_price += area * region_perimeters[&region];
+    }
+    total_price
 }
 
 #[aoc(day12, part2)]
@@ -86,7 +124,7 @@ impl<Item> Grid<Item> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
     x: usize,
     y: usize,
@@ -174,17 +212,17 @@ mod tests {
         MMMISSJEEE
     "};
 
-    #[ignore]
+    #[test]
     fn part1_example_small() {
         assert_eq!(part1(&parse(EXAMPLE_INPUT_SMALL)), 140);
     }
 
-    #[ignore]
+    #[test]
     fn part1_example_islands() {
         assert_eq!(part1(&parse(EXAMPLE_INPUT_ISLANDS)), 772);
     }
 
-    #[ignore]
+    #[test]
     fn part1_example_large() {
         assert_eq!(part1(&parse(EXAMPLE_INPUT_LARGE)), 1930);
     }
