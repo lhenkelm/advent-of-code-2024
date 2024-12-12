@@ -25,6 +25,49 @@ fn parse(input: &str) -> Grid<char> {
 
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
+    let first_region_occurance = mark_regions_naive(&input);
+    let mut perimeter_parts = Grid {
+        data: vec![0u32; input.height * input.width],
+        width: input.width,
+        height: input.height,
+    };
+    for (flat_idx, plant_region) in first_region_occurance.data.iter().enumerate() {
+        let plant_pos = first_region_occurance.point_index(flat_idx).unwrap();
+        for direction in DIRECTIONS {
+            let neighbour_pos = plant_pos + direction.step();
+            match first_region_occurance.get(neighbour_pos) {
+                Some(neighbour_region) => {
+                    if neighbour_region != plant_region {
+                        perimeter_parts[plant_pos] += 1;
+                    }
+                }
+                None => perimeter_parts[plant_pos] += 1,
+            }
+        }
+    }
+    let perimeter_parts = perimeter_parts;
+
+    let mut region_areas = FxHashMap::default();
+    for region in first_region_occurance.data.iter() {
+        *region_areas.entry(*region).or_insert(0u64) += 1;
+    }
+    let region_areas = region_areas;
+
+    let mut region_perimeters = FxHashMap::default();
+    for flat_idx in 0..perimeter_parts.data.len() {
+        let region = first_region_occurance.data[flat_idx];
+        *region_perimeters.entry(region).or_insert(0u64) += perimeter_parts.data[flat_idx] as u64;
+    }
+    let region_perimeters = region_perimeters;
+
+    let mut total_price = 0;
+    for (region, area) in region_areas {
+        total_price += area * region_perimeters[&region];
+    }
+    total_price
+}
+
+fn mark_regions_naive(input: &Grid<char>) -> Grid<Point> {
     // TODO: the current way to build this map is convoluted, I think it could be replaced
     // using a kind of recursive traversal
     let mut first_region_occurance = Grid {
@@ -87,48 +130,7 @@ fn part1(input: &Grid<char>) -> u64 {
             }
         }
     }
-
-    let first_region_occurance = first_region_occurance;
-
-    let mut perimeter_parts = Grid {
-        data: vec![0u32; input.height * input.width],
-        width: input.width,
-        height: input.height,
-    };
-    for (flat_idx, plant_region) in first_region_occurance.data.iter().enumerate() {
-        let plant_pos = first_region_occurance.point_index(flat_idx).unwrap();
-        for direction in DIRECTIONS {
-            let neighbour_pos = plant_pos + direction.step();
-            match first_region_occurance.get(neighbour_pos) {
-                Some(neighbour_region) => {
-                    if neighbour_region != plant_region {
-                        perimeter_parts[plant_pos] += 1;
-                    }
-                }
-                None => perimeter_parts[plant_pos] += 1,
-            }
-        }
-    }
-    let perimeter_parts = perimeter_parts;
-
-    let mut region_areas = FxHashMap::default();
-    for region in first_region_occurance.data.iter() {
-        *region_areas.entry(*region).or_insert(0u64) += 1;
-    }
-    let region_areas = region_areas;
-
-    let mut region_perimeters = FxHashMap::default();
-    for flat_idx in 0..perimeter_parts.data.len() {
-        let region = first_region_occurance.data[flat_idx];
-        *region_perimeters.entry(region).or_insert(0u64) += perimeter_parts.data[flat_idx] as u64;
-    }
-    let region_perimeters = region_perimeters;
-
-    let mut total_price = 0;
-    for (region, area) in region_areas {
-        total_price += area * region_perimeters[&region];
-    }
-    total_price
+    first_region_occurance
 }
 
 #[aoc(day12, part2)]
