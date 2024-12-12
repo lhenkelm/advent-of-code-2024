@@ -26,23 +26,6 @@ fn parse(input: &str) -> Grid<char> {
 #[aoc(day12, part1)]
 fn part1(input: &Grid<char>) -> u64 {
     let first_region_occurance = mark_regions_flood_fill(&input);
-    // it seems the cause is somehow non-local
-    if false {
-        let wrong = mark_regions_naive(input);
-        for flat_index in (0..input.data.len()).take(500) {
-            if first_region_occurance.data[flat_index] != wrong.data[flat_index] {
-                let pt = dbg!(input.point_index(flat_index).unwrap());
-                for y in (pt.y - 3)..(pt.y + 4) {
-                    for x in (pt.x - 3)..(pt.x + 4) {
-                        let p = input[pt + (x as isize, y as isize)];
-                        print!("{}", p);
-                    }
-                    println!();
-                }
-            }
-        }
-    }
-
     let region_areas = measure_region_areas(&first_region_occurance);
     let region_perimeters = measure_region_perimeters(&first_region_occurance);
 
@@ -56,71 +39,6 @@ fn part1(input: &Grid<char>) -> u64 {
 #[aoc(day12, part2)]
 fn part2(input: &Grid<char>) -> String {
     todo!()
-}
-
-/// This is a naive attempt to find the regions, but its incorrect
-fn mark_regions_naive(input: &Grid<char>) -> Grid<Point> {
-    let mut first_region_occurance = Grid {
-        data: vec![
-            Point {
-                x: input.width,
-                y: input.height
-            };
-            input.height * input.width
-        ],
-        width: input.width,
-        height: input.height,
-    };
-    'outer: for (flat_idx, &plant) in input.data.iter().enumerate() {
-        let plant_pos = input.point_index(flat_idx).unwrap();
-        // only check back the directions we have already traversed through
-        for direction in [Direction::West, Direction::North] {
-            let neighbour_pos = plant_pos + direction.step();
-            if let Some(neighbour_plant) = input.get(neighbour_pos) {
-                if *neighbour_plant != plant {
-                    continue;
-                }
-                let first_plant_pos = first_region_occurance[neighbour_pos];
-                first_region_occurance[plant_pos] = first_plant_pos;
-                continue 'outer;
-            }
-        }
-        // if it is disconnected from its kind, its a new region, and its location
-        // becomes the identifier of the region
-        first_region_occurance[plant_pos] = plant_pos;
-    }
-    debug_assert_eq!(first_region_occurance.data.len(), input.data.len());
-    // now we have regions, but certain kinds of concave regions may be incorrectly split
-    // (cf. the test cases) So here we go through again to merge these fake splits.
-    let mut region_merges = FxHashMap::default();
-    for (flat_idx, plant) in input.data.iter().enumerate() {
-        let plant_pos = input.point_index(flat_idx).unwrap();
-        let plant_region = first_region_occurance[plant_pos];
-        // here we check all directions, and find regions to merge
-        for direction in DIRECTIONS {
-            let neighbour_pos = plant_pos + direction.step();
-            if let Some(neighbour_plant) = input.get(neighbour_pos) {
-                let neighbour_region = first_region_occurance[neighbour_pos];
-                if neighbour_plant == plant && neighbour_region != plant_region {
-                    region_merges
-                        .entry(plant_region)
-                        .or_insert_with(|| FxHashSet::default())
-                        .insert(neighbour_region);
-                }
-            }
-        }
-    }
-    let region_merges = region_merges;
-    for (earliest_region, fake_regions) in region_merges {
-        for fake_region in fake_regions {
-            for region in &mut first_region_occurance.data {
-                if *region == fake_region {
-                    *region = earliest_region;
-                }
-            }
-        }
-    }
-    first_region_occurance
 }
 
 /// Mark connected regions using recursive flood-fill
