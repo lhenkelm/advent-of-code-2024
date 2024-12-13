@@ -40,7 +40,7 @@ fn part1(input: &Grid<char>) -> u64 {
 fn part2(input: &Grid<char>) -> u64 {
     let regions = mark_regions_flood_fill(input);
     let region_areas = measure_region_areas(&regions);
-    let region_side_counts = count_region_sides(&regions);
+    let region_side_counts = count_region_sides_v2(&regions);
 
     let mut total_price = 0;
     for (region, area) in region_areas {
@@ -149,6 +149,50 @@ fn measure_region_perimeters(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
         *region_perimeters.entry(region).or_insert(0u64) += perimeter_parts.data[flat_idx] as u64;
     }
     region_perimeters
+}
+
+fn count_region_sides_v2(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
+    let mut side_counts = FxHashMap::default();
+    for (flat_index, region) in regions.data.iter().enumerate() {
+        let plant_pos = regions.point_index(flat_index).unwrap();
+        for diag in [Diagonal::NE, Diagonal::NW, Diagonal::SE, Diagonal::SW] {
+            // if the diagonal neigbour is of our own region,
+            // we are not in a corner and can skip this check
+            if let Some(diag_neighbour) = plant_pos.checked_add(diag.step()) {
+                if let Some(r) = regions.get(diag_neighbour) {
+                    if r == region {
+                        continue;
+                    }
+                }
+            }
+            // if the diagonal neigbour is not of our own region,
+            // but the plants (counter-)clock wise either both are, or both
+            // are not, it is a corner
+            let clockwise_in_region = match plant_pos.checked_add(diag.step_cw()) {
+                None => false,
+                Some(pos) => match regions.get(pos) {
+                    None => false,
+                    Some(r) => r == region,
+                },
+            };
+            let counter_clockwise_in_region = match plant_pos.checked_add(diag.step_ccw()) {
+                None => false,
+                Some(pos) => match regions.get(pos) {
+                    None => false,
+                    Some(r) => r == region,
+                },
+            };
+            let is_corner = match (clockwise_in_region, counter_clockwise_in_region) {
+                (true, true) => true,   // inner corner (concave)
+                (false, false) => true, // outward corner (convex)
+                _ => false,
+            };
+            if is_corner {
+                *side_counts.entry(*region).or_insert(0) += 1
+            }
+        }
+    }
+    side_counts
 }
 
 fn count_region_sides(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
@@ -673,6 +717,28 @@ struct Point {
     y: usize,
 }
 
+impl Point {
+    fn checked_add(&self, (dx, dy): (isize, isize)) -> Option<Point> {
+        if dx < 0 && dx.abs() as usize > self.x {
+            return None;
+        }
+        if dy < 0 && dx.abs() as usize > self.y {
+            return None;
+        }
+        Some(*self + (dx, dy))
+    }
+
+    fn checked_sub(&self, (dx, dy): (isize, isize)) -> Option<Point> {
+        if dx > self.x as isize {
+            return None;
+        }
+        if dy > self.y as isize {
+            return None;
+        }
+        Some(*self - (dx, dy))
+    }
+}
+
 impl Add<(isize, isize)> for Point {
     type Output = Point;
 
@@ -688,12 +754,48 @@ impl Sub<(isize, isize)> for Point {
     type Output = Point;
 
     fn sub(self, (dx, dy): (isize, isize)) -> Self::Output {
-        assert!(dx <= self.x as isize);
-        assert!(dy <= self.y as isize);
+        debug_assert!(dx <= self.x as isize);
+        debug_assert!(dy <= self.y as isize);
 
         Point {
             x: (self.x as isize - dx) as usize,
             y: (self.y as isize - dy) as usize,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Diagonal {
+    NE,
+    SE,
+    SW,
+    NW,
+}
+impl Diagonal {
+    fn step(&self) -> (isize, isize) {
+        match self {
+            Diagonal::NE => (1, -1),
+            Diagonal::SE => (1, 1),
+            Diagonal::SW => (-1, 1),
+            Diagonal::NW => (-1, -1),
+        }
+    }
+
+    fn step_cw(&self) -> (isize, isize) {
+        match self {
+            Diagonal::NE => Direction::East.step(),
+            Diagonal::SE => Direction::South.step(),
+            Diagonal::SW => Direction::West.step(),
+            Diagonal::NW => Direction::North.step(),
+        }
+    }
+
+    fn step_ccw(&self) -> (isize, isize) {
+        match self {
+            Diagonal::NE => Direction::North.step(),
+            Diagonal::SE => Direction::East.step(),
+            Diagonal::SW => Direction::South.step(),
+            Diagonal::NW => Direction::West.step(),
         }
     }
 }
