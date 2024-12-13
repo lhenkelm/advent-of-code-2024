@@ -52,7 +52,6 @@ fn part1(claw_machines: &[ClawMachine]) -> u64 {
                 || (combo[(1, 0)].fract() > e && combo[(1, 0)].fract() < 1. - e)
                 || combo[(0, 0)] < 0.0
                 || combo[(1, 0)] < 0.0
-                || combo[(0, 0)].max(combo[(1, 0)]) > 100.0
             {
                 return 0;
             }
