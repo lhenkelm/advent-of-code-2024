@@ -35,8 +35,30 @@ fn parse(input: &str) -> Vec<ClawMachine> {
 }
 
 #[aoc(day13, part1)]
-fn part1(claw_machines: &[ClawMachine]) -> u32 {
-    todo!()
+fn part1(claw_machines: &[ClawMachine]) -> u64 {
+    let a_price = 3f64;
+    let b_price = 1f64;
+    claw_machines
+        .iter()
+        .map(|claw_machine| {
+            let inverse = claw_machine
+                .buttons
+                .try_inverse()
+                .unwrap_or_else(|| panic!("not invertible: {:?}", claw_machine));
+            let combo = inverse * claw_machine.prize_location;
+            // numbers of button presses must inherently be non-negative and integer
+            let e = 1e-2;
+            if (combo[(0, 0)].fract() > e && combo[(0, 0)].fract() < 1. - e)
+                || (combo[(1, 0)].fract() > e && combo[(1, 0)].fract() < 1. - e)
+                || combo[(0, 0)] < 0.0
+                || combo[(1, 0)] < 0.0
+                || combo[(0, 0)].max(combo[(1, 0)]) > 100.0
+            {
+                return 0;
+            }
+            (combo[(0, 0)] * a_price + combo[(1, 0)] * b_price).round() as u64
+        })
+        .sum()
 }
 
 #[aoc(day13, part2)]
@@ -73,7 +95,7 @@ mod tests {
             Prize: X=18641, Y=10279
     "};
 
-    #[ignore]
+    #[test]
     fn part1_example() {
         assert_eq!(part1(&parse(PART_1_EXAMPLE_INPUT)), 480);
     }
