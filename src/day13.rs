@@ -128,6 +128,6 @@ mod tests {
 
     #[test]
     fn part2_example() {
-        assert!(part2(&parse(PART_1_EXAMPLE_INPUT)) > 480);
+        assert_eq!(part2(&parse(PART_1_EXAMPLE_INPUT)), 875318608908);
     }
 }
