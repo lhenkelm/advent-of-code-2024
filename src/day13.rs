@@ -1,17 +1,53 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use nalgebra::{Matrix2, Vector2};
+use regex::Regex;
+
 #[aoc_generator(day13)]
-fn parse(input: &str) -> String {
-    todo!()
+fn parse(input: &str) -> Vec<ClawMachine> {
+    let button_regex = Regex::new(r"Button [AB]: X\+(\d+), Y\+(\d+)").unwrap();
+    let prize_regex = Regex::new(r"Prize: X=(\d+), Y=(\d+)").unwrap();
+    input
+        .trim()
+        .split("\n\n")
+        .map(|para| {
+            let mut lines = para.lines();
+            let (_, button_a) = button_regex
+                .captures(lines.next().unwrap())
+                .unwrap()
+                .extract();
+            let button_a: [f64; 2] = button_a.map(|tok| tok.parse::<f64>().unwrap());
+            let (_, button_b) = button_regex
+                .captures(lines.next().unwrap())
+                .unwrap()
+                .extract();
+            let button_b: [f64; 2] = button_b.map(|tok| tok.parse::<f64>().unwrap());
+            let (_, prize) = prize_regex
+                .captures(lines.next().unwrap())
+                .unwrap()
+                .extract();
+            let prize: [f64; 2] = prize.map(|tok| tok.parse::<f64>().unwrap());
+            ClawMachine {
+                buttons: Matrix2::new(button_a[0], button_b[0], button_a[1], button_b[1]),
+                prize_location: Vector2::new(prize[0], prize[1]),
+            }
+        })
+        .collect()
 }
 
 #[aoc(day13, part1)]
-fn part1(input: &str) -> u32 {
+fn part1(claw_machines: &[ClawMachine]) -> u32 {
     todo!()
 }
 
 #[aoc(day13, part2)]
-fn part2(input: &str) -> String {
+fn part2(claw_machines: &[ClawMachine]) -> String {
     todo!()
+}
+
+#[derive(Debug)]
+struct ClawMachine {
+    buttons: Matrix2<f64>,
+    prize_location: Vector2<f64>,
 }
 
 #[cfg(test)]
