@@ -13,3 +13,4 @@ repos:
         entry: cargo clippy --frozen
         language: system
         pass_filenames: false
+        verbose: true
