@@ -156,12 +156,11 @@ fn count_region_sides_v2(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
     for (flat_index, region) in regions.data.iter().enumerate() {
         let plant_pos = regions.point_index(flat_index).unwrap();
         for diag in [Diagonal::NE, Diagonal::NW, Diagonal::SE, Diagonal::SW] {
-            // if the diagonal neigbour is of our own region,
-            // we are not in a corner and can skip this check
+            let mut diag_is_in_region = false;
             if let Some(diag_neighbour) = plant_pos.checked_add(diag.step()) {
                 if let Some(r) = regions.get(diag_neighbour) {
                     if r == region {
-                        continue;
+                        diag_is_in_region = true;
                     }
                 }
             }
@@ -182,9 +181,12 @@ fn count_region_sides_v2(regions: &Grid<Point>) -> FxHashMap<Point, u64> {
                     Some(r) => r == region,
                 },
             };
+            // note that even if the diagonal is of our region,
+            // it can have "snuck around" and may not be directly connected,
+            // in the case of the outward corner.
             let is_corner = match (clockwise_in_region, counter_clockwise_in_region) {
-                (true, true) => true,   // inner corner (concave)
-                (false, false) => true, // outward corner (convex)
+                (true, true) => !diag_is_in_region, // inner corner (concave)
+                (false, false) => true,             // outward corner (convex)
                 _ => false,
             };
             if is_corner {
@@ -951,6 +953,36 @@ mod tests {
             AAAAAA
         "};
         assert_eq!(part2(&parse(input)), 368);
+    }
+
+    #[test]
+    fn part2_is_this_it() {
+        let input = indoc! {"
+            AB
+            BA
+        "};
+        assert_eq!(part2(&parse(input)), 4 * 4);
+    }
+
+    #[test]
+    fn part2_smaller_islands() {
+        let input = indoc! {"
+            ~~~~
+            ~~#~
+            ~#~~
+            ~~~~
+        "};
+        assert_eq!(part2(&parse(input)), 2 * 4 + (4 * 4 - 2) * (3 * 4));
+    }
+
+    #[test]
+    fn part2_is_it_the_x() {
+        let input = indoc! {"
+            ~~#
+            ~#~
+            ~~~
+        "};
+        assert_eq!(part2(&parse(input)), 2 * 4 + 7 * 10);
     }
 
     #[test]
