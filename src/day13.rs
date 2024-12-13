@@ -62,8 +62,34 @@ fn part1(claw_machines: &[ClawMachine]) -> u64 {
 }
 
 #[aoc(day13, part2)]
-fn part2(claw_machines: &[ClawMachine]) -> String {
-    todo!()
+fn part2(claw_machines: &[ClawMachine]) -> u64 {
+    let a_price = 3f64;
+    let b_price = 1f64;
+    let correction = 10000000000000.0;
+    claw_machines
+        .iter()
+        .map(|claw_machine| {
+            let fixed_machine = ClawMachine {
+                buttons: claw_machine.buttons,
+                prize_location: claw_machine.prize_location.add_scalar(correction),
+            };
+            let inverse = fixed_machine
+                .buttons
+                .try_inverse()
+                .unwrap_or_else(|| panic!("not invertible: {:?}", fixed_machine));
+            let combo = inverse * fixed_machine.prize_location;
+            // numbers of button presses must inherently be non-negative and integer
+            let e = 1e-2;
+            if (combo[(0, 0)].fract() > e && combo[(0, 0)].fract() < 1. - e)
+                || (combo[(1, 0)].fract() > e && combo[(1, 0)].fract() < 1. - e)
+                || combo[(0, 0)] < 0.0
+                || combo[(1, 0)] < 0.0
+            {
+                return 0;
+            }
+            (combo[(0, 0)] * a_price + combo[(1, 0)] * b_price).round() as u64
+        })
+        .sum()
 }
 
 #[derive(Debug)]
@@ -100,8 +126,8 @@ mod tests {
         assert_eq!(part1(&parse(PART_1_EXAMPLE_INPUT)), 480);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse(PART_1_EXAMPLE_INPUT)), "<RESULT>");
+        assert!(part2(&parse(PART_1_EXAMPLE_INPUT)) > 480);
     }
 }
