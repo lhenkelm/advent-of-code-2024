@@ -1,19 +1,134 @@
+use std::{
+    cmp::Ordering,
+    ops::{Add, Mul},
+};
+
 use aoc_runner_derive::{aoc, aoc_generator};
+use regex::Regex;
+
 #[aoc_generator(day14)]
-fn parse(input: &str) -> String {
-    todo!()
+fn parse(input: &str) -> Vec<Robot> {
+    let robo_regex = Regex::new(r"p=(\d+),(\d+) v=(-?\d+),(-?\d+)").unwrap();
+    input
+        .trim()
+        .split('\n')
+        .map(|line| {
+            let (_, [px, py, vx, vy]) = robo_regex.captures(line).unwrap().extract();
+            Robot {
+                pos: Point {
+                    x: px.parse().unwrap(),
+                    y: py.parse().unwrap(),
+                },
+                vel: Velocity {
+                    x: vx.parse().unwrap(),
+                    y: vy.parse().unwrap(),
+                },
+            }
+        })
+        .collect()
 }
 
 #[aoc(day14, part1)]
-fn part1(input: &str) -> u64 {
-    todo!()
+fn part1(initial_state: &[Robot]) -> u64 {
+    let (width, height) = match initial_state.iter().map(|r| r.pos.y).max() {
+        None => panic!("empty input"),
+        Some(0..7) => (11i64, 7i64),   // example
+        Some(7..) => (101i64, 103i64), // real
+        Some(..0) => panic!("negative space"),
+    };
+    let after_100s = initial_state
+        .iter()
+        .map(|initial_robot| initial_robot.walk_n_seconds(100, &(width, height)));
+
+    let half_width = (width - 1) / 2;
+    let half_height = (height - 1) / 2;
+    let mut top_left = 0u64;
+    let mut top_right = 0u64;
+    let mut bottom_left = 0u64;
+    let mut bottom_right = 0u64;
+    for walked_robot in after_100s {
+        let Robot {
+            pos: Point { x, y },
+            vel: _,
+        } = walked_robot;
+        let rel_to_half_height = y.cmp(&half_height);
+        let rel_to_half_width = x.cmp(&half_width);
+
+        match (rel_to_half_height, rel_to_half_width) {
+            (Ordering::Less, Ordering::Less) => top_left += 1,
+            (Ordering::Less, Ordering::Greater) => top_right += 1,
+            (Ordering::Greater, Ordering::Less) => bottom_left += 1,
+            (Ordering::Greater, Ordering::Greater) => bottom_right += 1,
+            _ => (),
+        }
+    }
+    top_left * top_right * bottom_left * bottom_right
 }
 
 #[aoc(day14, part2)]
-fn part2(input: &str) -> String {
+fn part2(initial_state: &[Robot]) -> String {
     todo!()
 }
 
+#[derive(Debug, Clone)]
+struct Robot {
+    pos: Point,
+    vel: Velocity,
+}
+
+impl Robot {
+    fn walk_n_seconds(&self, seconds: i64, dimensions: &(i64, i64)) -> Self {
+        let new_pos = self.pos.modular_add(self.vel * seconds, dimensions);
+        Self {
+            pos: new_pos,
+            vel: self.vel,
+        }
+    }
+}
+
+impl Add<Velocity> for Point {
+    type Output = Point;
+
+    fn add(self, rhs: Velocity) -> Self::Output {
+        Self::Output {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Point {
+    x: i64,
+    y: i64,
+}
+
+impl Point {
+    fn modular_add(&self, summand: Velocity, (width, height): &(i64, i64)) -> Self {
+        let temp = *self + summand;
+        Point {
+            x: temp.x.rem_euclid(*width),
+            y: temp.y.rem_euclid(*height),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Velocity {
+    x: i64,
+    y: i64,
+}
+
+impl Mul<i64> for Velocity {
+    type Output = Velocity;
+
+    fn mul(self, rhs: i64) -> Self::Output {
+        Self::Output {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -34,13 +149,8 @@ mod tests {
             p=9,5 v=-3,-3
     "};
 
-    #[ignore]
+    #[test]
     fn part1_example() {
         assert_eq!(part1(&parse(EXAMPLE)), 12);
-    }
-
-    #[ignore]
-    fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
     }
 }

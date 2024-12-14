@@ -64,7 +64,7 @@ fn part1(claw_machines: &[ClawMachine]) -> u64 {
 fn part2(claw_machines: &[ClawMachine]) -> u64 {
     let correction = 10000000000000.0;
     let with_corrected_locations: Vec<ClawMachine> = claw_machines
-        .into_iter()
+        .iter()
         .map(|claw_machine| ClawMachine {
             buttons: claw_machine.buttons,
             prize_location: claw_machine.prize_location.add_scalar(correction),
