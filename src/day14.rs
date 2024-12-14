@@ -87,6 +87,23 @@ fn part2(initial_state: &[Robot]) -> String {
         .min_by(|(_, var_a), (_, var_b)| (var_a).partial_cmp(&(var_b)).unwrap())
         .unwrap();
 
+    let (min_s_secs, min_score) = (0..(width * height))
+        .map(|seconds| {
+            (
+                seconds,
+                security_score(
+                    &initial_state
+                        .iter()
+                        .map(|robot| robot.walk_n_seconds(seconds, &(width, height)))
+                        .collect::<Vec<Robot>>(),
+                    width - 5,
+                    height - 5,
+                ),
+            )
+        })
+        .min_by(|(_, score_a), (_, score_b)| (score_a).cmp(&(score_b)))
+        .unwrap();
+
     let mut out = format!(
         "@ {} seconds, have x variance: {}, yielding:\n",
         min_x_secs, min_x_var
@@ -121,6 +138,18 @@ fn part2(initial_state: &[Robot]) -> String {
         &initial_state
             .iter()
             .map(|robot| robot.walk_n_seconds(min_r_secs, &(width, height)))
+            .collect::<Vec<Robot>>(),
+    ));
+    out.push_str(&format!(
+        "@ {} seconds, have score: {}, yielding:\n",
+        min_s_secs, min_score
+    ));
+    out.push_str(&format_map(
+        width,
+        height,
+        &initial_state
+            .iter()
+            .map(|robot| robot.walk_n_seconds(min_s_secs, &(width, height)))
             .collect::<Vec<Robot>>(),
     ));
     out
