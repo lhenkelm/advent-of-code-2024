@@ -1,7 +1,6 @@
 use std::{
     cmp::Ordering,
     ops::{Add, Mul},
-    result,
 };
 
 use aoc_runner_derive::{aoc, aoc_generator};
