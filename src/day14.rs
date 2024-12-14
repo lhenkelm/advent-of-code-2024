@@ -93,6 +93,21 @@ fn part2(initial_state: &[Robot]) -> String {
         .min_by(|(_, var_a), (_, var_b)| (var_a.1).partial_cmp(&(var_b.1)).unwrap())
         .unwrap();
 
+    let (min_r_secs, min_r_var) = (0..(width * height))
+        .map(|seconds| {
+            (
+                seconds,
+                radial_variance(
+                    &initial_state
+                        .iter()
+                        .map(|robot| robot.walk_n_seconds(seconds, &(width, height)))
+                        .collect::<Vec<Robot>>(),
+                ),
+            )
+        })
+        .min_by(|(_, var_a), (_, var_b)| (var_a).partial_cmp(&(var_b)).unwrap())
+        .unwrap();
+
     let mut out = format!(
         "@ {} seconds, have x variance: {}, yielding:\n",
         min_x_secs, min_x_var
@@ -114,7 +129,19 @@ fn part2(initial_state: &[Robot]) -> String {
         height,
         &initial_state
             .iter()
-            .map(|robot| robot.walk_n_seconds(*min_x_secs, &(width, height)))
+            .map(|robot| robot.walk_n_seconds(*min_y_secs, &(width, height)))
+            .collect::<Vec<Robot>>(),
+    ));
+    out.push_str(&format!(
+        "@ {} seconds, have radial variance: {}, yielding:\n",
+        min_r_secs, min_r_var
+    ));
+    out.push_str(&format_map(
+        width,
+        height,
+        &initial_state
+            .iter()
+            .map(|robot| robot.walk_n_seconds(min_r_secs, &(width, height)))
             .collect::<Vec<Robot>>(),
     ));
     out
@@ -161,6 +188,22 @@ fn position_variances(robots: &[Robot]) -> (f64, f64) {
                 partial_y + (y / robots.len() as f64),
             )
         })
+}
+
+fn radial_variance(robots: &[Robot]) -> f64 {
+    let (mean_x, mean_y) = robots
+        .iter()
+        .map(|robot| (robot.pos.x as f64, robot.pos.y as f64))
+        .fold((0f64, 0f64), |(partial_x, partial_y), (x, y)| {
+            (
+                partial_x + (x / robots.len() as f64),
+                partial_y + (y / robots.len() as f64),
+            )
+        });
+    robots
+        .iter()
+        .map(|robot| (robot.pos.x as f64 - mean_x).powi(2) + (robot.pos.y as f64 - mean_y).powi(2))
+        .fold(0f64, |partial, r| partial + (r / robots.len() as f64))
 }
 
 #[derive(Debug, Clone)]
