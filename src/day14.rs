@@ -37,33 +37,12 @@ fn part1(initial_state: &[Robot]) -> u64 {
         Some(7..) => (101i64, 103i64), // real
         Some(..0) => panic!("negative space"),
     };
-    let after_100s = initial_state
+    let after_100s: Vec<Robot> = initial_state
         .iter()
-        .map(|initial_robot| initial_robot.walk_n_seconds(100, &(width, height)));
+        .map(|initial_robot| initial_robot.walk_n_seconds(100, &(width, height)))
+        .collect();
 
-    let half_width = (width - 1) / 2;
-    let half_height = (height - 1) / 2;
-    let mut top_left = 0u64;
-    let mut top_right = 0u64;
-    let mut bottom_left = 0u64;
-    let mut bottom_right = 0u64;
-    for walked_robot in after_100s {
-        let Robot {
-            pos: Point { x, y },
-            vel: _,
-        } = walked_robot;
-        let rel_to_half_height = y.cmp(&half_height);
-        let rel_to_half_width = x.cmp(&half_width);
-
-        match (rel_to_half_height, rel_to_half_width) {
-            (Ordering::Less, Ordering::Less) => top_left += 1,
-            (Ordering::Less, Ordering::Greater) => top_right += 1,
-            (Ordering::Greater, Ordering::Less) => bottom_left += 1,
-            (Ordering::Greater, Ordering::Greater) => bottom_right += 1,
-            _ => (),
-        }
-    }
-    top_left * top_right * bottom_left * bottom_right
+    security_score(&after_100s, width, height)
 }
 
 #[aoc(day14, part2)]
@@ -145,6 +124,32 @@ fn part2(initial_state: &[Robot]) -> String {
             .collect::<Vec<Robot>>(),
     ));
     out
+}
+
+fn security_score(robots: &[Robot], width: i64, height: i64) -> u64 {
+    let half_width = (width - 1) / 2;
+    let half_height = (height - 1) / 2;
+    let mut top_left = 0u64;
+    let mut top_right = 0u64;
+    let mut bottom_left = 0u64;
+    let mut bottom_right = 0u64;
+    for walked_robot in robots {
+        let Robot {
+            pos: Point { x, y },
+            vel: _,
+        } = walked_robot;
+        let rel_to_half_height = y.cmp(&half_height);
+        let rel_to_half_width = x.cmp(&half_width);
+
+        match (rel_to_half_height, rel_to_half_width) {
+            (Ordering::Less, Ordering::Less) => top_left += 1,
+            (Ordering::Less, Ordering::Greater) => top_right += 1,
+            (Ordering::Greater, Ordering::Less) => bottom_left += 1,
+            (Ordering::Greater, Ordering::Greater) => bottom_right += 1,
+            _ => (),
+        }
+    }
+    top_left * top_right * bottom_left * bottom_right
 }
 
 fn format_map(width: i64, height: i64, robots: &[Robot]) -> String {
