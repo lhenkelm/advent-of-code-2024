@@ -72,7 +72,7 @@ fn part2(initial_state: &[Robot]) -> String {
     let width = 101i64;
     let height = 103i64;
 
-    let (min_seconds, min_var) = (0..(width * height))
+    let secs_to_vars = (0..(width * height))
         .map(|seconds| {
             (
                 seconds,
@@ -84,19 +84,38 @@ fn part2(initial_state: &[Robot]) -> String {
                 ),
             )
         })
+        .collect::<Vec<(i64, (f64, f64))>>();
+    let (min_x_secs, (min_x_var, _)) = secs_to_vars
+        .iter()
+        .min_by(|(_, var_a), (_, var_b)| (var_a.0).partial_cmp(&(var_b.0)).unwrap())
+        .unwrap();
+    let (min_y_secs, (_, min_y_var)) = secs_to_vars
+        .iter()
         .min_by(|(_, var_a), (_, var_b)| (var_a.1).partial_cmp(&(var_b.1)).unwrap())
         .unwrap();
 
     let mut out = format!(
-        "@ {} seconds, have variances sum: {}, yielding:\n",
-        min_seconds, min_var.1
+        "@ {} seconds, have x variance: {}, yielding:\n",
+        min_x_secs, min_x_var
     );
     out.push_str(&format_map(
         width,
         height,
         &initial_state
             .iter()
-            .map(|robot| robot.walk_n_seconds(min_seconds, &(width, height)))
+            .map(|robot| robot.walk_n_seconds(*min_x_secs, &(width, height)))
+            .collect::<Vec<Robot>>(),
+    ));
+    out.push_str(&format!(
+        "@ {} seconds, have y variance: {}, yielding:\n",
+        min_y_secs, min_y_var
+    ));
+    out.push_str(&format_map(
+        width,
+        height,
+        &initial_state
+            .iter()
+            .map(|robot| robot.walk_n_seconds(*min_x_secs, &(width, height)))
             .collect::<Vec<Robot>>(),
     ));
     out
