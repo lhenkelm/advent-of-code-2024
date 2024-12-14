@@ -1,10 +1,12 @@
 use std::{
     cmp::Ordering,
     ops::{Add, Mul},
+    result,
 };
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use regex::Regex;
+use rustc_hash::FxHashSet;
 
 #[aoc_generator(day14)]
 fn parse(input: &str) -> Vec<Robot> {
@@ -67,7 +69,28 @@ fn part1(initial_state: &[Robot]) -> u64 {
 
 #[aoc(day14, part2)]
 fn part2(initial_state: &[Robot]) -> String {
-    todo!()
+    let width = 101i64;
+    let height = 103i64;
+    let mut out = "\n".to_string();
+    out.push_str(&format_map(width, height, initial_state));
+    out
+}
+
+fn format_map(width: i64, height: i64, robots: &[Robot]) -> String {
+    let robot_positions: FxHashSet<Point> = robots.iter().map(|robot| robot.pos).collect();
+    let mut result = String::with_capacity(((width + 1) * height) as usize);
+    for y in 0..height {
+        for x in 0..width {
+            let pos = Point { x, y };
+            if robot_positions.contains(&pos) {
+                result.push('🤖');
+            } else {
+                result.push(' ');
+            }
+        }
+        result.push('\n');
+    }
+    result
 }
 
 #[derive(Debug, Clone)]
@@ -97,7 +120,7 @@ impl Add<Velocity> for Point {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
     x: i64,
     y: i64,
