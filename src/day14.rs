@@ -71,8 +71,34 @@ fn part1(initial_state: &[Robot]) -> u64 {
 fn part2(initial_state: &[Robot]) -> String {
     let width = 101i64;
     let height = 103i64;
-    let mut out = "\n".to_string();
-    out.push_str(&format_map(width, height, initial_state));
+
+    let (min_seconds, min_var) = (0..(width * height))
+        .map(|seconds| {
+            (
+                seconds,
+                position_variances(
+                    &initial_state
+                        .iter()
+                        .map(|robot| robot.walk_n_seconds(seconds, &(width, height)))
+                        .collect::<Vec<Robot>>(),
+                ),
+            )
+        })
+        .min_by(|(_, var_a), (_, var_b)| (var_a.1).partial_cmp(&(var_b.1)).unwrap())
+        .unwrap();
+
+    let mut out = format!(
+        "@ {} seconds, have variances sum: {}, yielding:\n",
+        min_seconds, min_var.1
+    );
+    out.push_str(&format_map(
+        width,
+        height,
+        &initial_state
+            .iter()
+            .map(|robot| robot.walk_n_seconds(min_seconds, &(width, height)))
+            .collect::<Vec<Robot>>(),
+    ));
     out
 }
 
@@ -91,6 +117,32 @@ fn format_map(width: i64, height: i64, robots: &[Robot]) -> String {
         result.push('\n');
     }
     result
+}
+
+fn position_variances(robots: &[Robot]) -> (f64, f64) {
+    let (mean_x, mean_y) = robots
+        .iter()
+        .map(|robot| (robot.pos.x as f64, robot.pos.y as f64))
+        .fold((0f64, 0f64), |(partial_x, partial_y), (x, y)| {
+            (
+                partial_x + (x / robots.len() as f64),
+                partial_y + (y / robots.len() as f64),
+            )
+        });
+    robots
+        .iter()
+        .map(|robot| {
+            (
+                (robot.pos.x as f64 - mean_x).powi(2),
+                (robot.pos.y as f64 - mean_y).powi(2),
+            )
+        })
+        .fold((0f64, 0f64), |(partial_x, partial_y), (x, y)| {
+            (
+                partial_x + (x / robots.len() as f64),
+                partial_y + (y / robots.len() as f64),
+            )
+        })
 }
 
 #[derive(Debug, Clone)]
