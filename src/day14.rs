@@ -188,7 +188,7 @@ fn format_map(width: i64, height: i64, robots: &[Robot]) -> String {
         for x in 0..width {
             let pos = Point { x, y };
             if robot_positions.contains(&pos) {
-                result.push('🤖');
+                result.push('#');
             } else {
                 result.push(' ');
             }
