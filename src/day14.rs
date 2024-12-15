@@ -84,7 +84,7 @@ fn part2(initial_state: &[Robot]) -> String {
                 ),
             )
         })
-        .min_by(|(_, var_a), (_, var_b)| (var_a).partial_cmp(&(var_b)).unwrap())
+        .min_by(|(_, var_a), (_, var_b)| (var_a).partial_cmp(var_b).unwrap())
         .unwrap();
 
     let (min_s_secs, min_score) = (0..(width * height))
@@ -101,7 +101,7 @@ fn part2(initial_state: &[Robot]) -> String {
                 ),
             )
         })
-        .min_by(|(_, score_a), (_, score_b)| (score_a).cmp(&(score_b)))
+        .min_by(|(_, score_a), (_, score_b)| (score_a).cmp(score_b))
         .unwrap();
 
     let mut out = format!(
