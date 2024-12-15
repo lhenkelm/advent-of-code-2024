@@ -1,5 +1,6 @@
 use std::{
     fmt::{self, Display, Formatter},
+    iter,
     ops::{Add, Index, IndexMut, Mul},
 };
 
@@ -50,8 +51,8 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
         // FIXME: optimize here by having `robo_at` be mutable state between iterations,
         // only searching once, initially?
         let robo_at = warehouse.robot_pos();
-        let next_at = robo_at.clone() + dir.vector();
-        match warehouse[next_at.clone()] {
+        let next_at = robo_at + dir.vector();
+        match warehouse[next_at] {
             Occupant::Empty => {
                 warehouse[next_at] = Occupant::Robot;
                 warehouse[robo_at] = Occupant::Empty;
@@ -59,11 +60,11 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
             Occupant::Wall => (),
             Occupant::Box => {
                 if let Some(next_empty) =
-                    warehouse.find_towards(next_at.clone(), dir.vector(), |(_, occupant)| {
+                    warehouse.find_towards(next_at, dir.vector(), |(_, occupant)| {
                         *occupant == Occupant::Empty || *occupant == Occupant::Wall
                     })
                 {
-                    let empty_cand = warehouse[next_empty.clone()];
+                    let empty_cand = warehouse[next_empty];
                     if empty_cand == Occupant::Wall {
                         continue;
                     }
@@ -86,7 +87,221 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
 
 #[aoc(day15, part2)]
 fn part2((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
-    todo!()
+    let mut warehouse = GridPt2::from_grid(initial_warehouse.clone());
+    for &dir in instructions {
+        let robo_at = warehouse.robot_pos();
+        let next_at = robo_at + dir.vector();
+        match warehouse[next_at] {
+            OccPt2::Empty => {
+                warehouse[next_at] = OccPt2::Robot;
+            }
+            OccPt2::Wall => continue,
+            OccPt2::LBox | OccPt2::RBox => {
+                if !can_push(next_at, false, dir, &warehouse) {
+                    continue;
+                }
+                push(next_at, false, dir, OccPt2::Robot, &mut warehouse);
+            }
+            OccPt2::Robot => unreachable!(),
+        }
+        warehouse[robo_at] = OccPt2::Empty;
+    }
+    warehouse
+        .enumerate_occupants()
+        .filter(|(_, occ)| *occ == OccPt2::LBox)
+        .map(|(point, _)| (point.y * 100 + point.x) as u64)
+        .sum()
+}
+
+fn can_push(push_at: Point, from_this_box: bool, dir: Direction, warehouse: &GridPt2) -> bool {
+    let occupant = warehouse[push_at];
+    match occupant {
+        OccPt2::Empty => true,
+        OccPt2::Wall => false,
+        OccPt2::LBox | OccPt2::RBox => {
+            let check_towards = match occupant {
+                OccPt2::LBox => Direction::East,
+                OccPt2::RBox => Direction::West,
+                _ => unreachable!(),
+            };
+            let pushing_towards_other = check_towards == dir;
+            let behind = can_push(
+                push_at + dir.vector(),
+                pushing_towards_other,
+                dir,
+                warehouse,
+            );
+            if from_this_box || pushing_towards_other {
+                return behind;
+            }
+            let other_half = can_push(push_at + check_towards.vector(), true, dir, warehouse);
+            behind && other_half
+        }
+        OccPt2::Robot => unreachable!(),
+    }
+}
+
+fn push(
+    push_at: Point,
+    from_this_box: bool,
+    dir: Direction,
+    from_occ: OccPt2,
+    warehouse: &mut GridPt2,
+) {
+    debug_assert_ne!(from_occ, OccPt2::Wall);
+    let occupant = warehouse[push_at];
+    match occupant {
+        OccPt2::Empty => (),
+        OccPt2::LBox | OccPt2::RBox => {
+            let also_push = match occupant {
+                OccPt2::LBox => Direction::East,
+                OccPt2::RBox => Direction::West,
+                _ => unreachable!(),
+            };
+            let pushing_towards_other = also_push == dir;
+            push(
+                push_at + dir.vector(),
+                pushing_towards_other,
+                dir,
+                occupant,
+                warehouse,
+            );
+            if !(from_this_box || pushing_towards_other) {
+                push(
+                    push_at + also_push.vector(),
+                    true,
+                    dir,
+                    OccPt2::Empty,
+                    warehouse,
+                );
+            }
+        }
+        OccPt2::Wall => unreachable!(),
+        OccPt2::Robot => unreachable!(),
+    }
+    warehouse[push_at] = from_occ
+}
+
+#[derive(Clone)]
+struct GridPt2 {
+    data: Vec<OccPt2>,
+    height: usize,
+    width: usize,
+}
+
+impl Index<Point> for GridPt2 {
+    type Output = OccPt2;
+
+    fn index(&self, index: Point) -> &Self::Output {
+        &self.data[self.flat_index(index)]
+    }
+}
+
+impl IndexMut<Point> for GridPt2 {
+    fn index_mut(&mut self, index: Point) -> &mut Self::Output {
+        let idx = self.flat_index(index);
+        &mut self.data[idx]
+    }
+}
+
+impl GridPt2 {
+    fn from_grid(grid_pt1: Grid) -> GridPt2 {
+        let data: Vec<OccPt2> = grid_pt1
+            .data
+            .iter()
+            .flat_map(|&occ| OccPt2::from_occupant(occ))
+            .collect();
+        let width = grid_pt1.width * 2;
+        let height = grid_pt1.height;
+        debug_assert_eq!(data.len(), width * height);
+        GridPt2 {
+            data,
+            width,
+            height,
+        }
+    }
+
+    fn robot_pos(&self) -> Point {
+        // FIXME: this is quite suboptimal, makes me prefer the keeping-the-agent-
+        // -separately approach from Guard Gallivant
+        let flat_idx = self
+            .data
+            .iter()
+            .enumerate()
+            .find(|(_, occ)| **occ == OccPt2::Robot)
+            .unwrap()
+            .0;
+        self.point_index(flat_idx)
+    }
+
+    fn point_index(&self, index: usize) -> Point {
+        debug_assert!(index < self.data.len());
+        Point {
+            x: index % self.width,
+            y: index / self.width,
+        }
+    }
+
+    fn flat_index(&self, index: Point) -> usize {
+        debug_assert!(index.x < self.width);
+        debug_assert!(index.y < self.height);
+        index.x + index.y * self.width
+    }
+
+    fn format(&self) -> String {
+        let mut result = String::with_capacity(self.height * (self.width + 1));
+        for (idx, occupant) in self.data.iter().enumerate() {
+            if idx % self.width == 0 && idx > 0 {
+                result.push('\n');
+            }
+            result.push(occupant.char());
+        }
+        result.push('\n');
+        result
+    }
+
+    fn enumerate_occupants(&self) -> impl Iterator<Item = (Point, OccPt2)> + '_ {
+        self.data
+            .iter()
+            .enumerate()
+            .map(|(idx, &occ)| (self.point_index(idx), occ))
+    }
+}
+
+impl Display for GridPt2 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.format())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OccPt2 {
+    Wall,
+    Empty,
+    LBox,
+    RBox,
+    Robot,
+}
+
+impl OccPt2 {
+    fn from_occupant(occ_pt1: Occupant) -> impl Iterator<Item = OccPt2> {
+        match occ_pt1 {
+            Occupant::Wall => iter::once(OccPt2::Wall).chain(iter::once(OccPt2::Wall)),
+            Occupant::Empty => iter::once(OccPt2::Empty).chain(iter::once(OccPt2::Empty)),
+            Occupant::Box => iter::once(OccPt2::LBox).chain(iter::once(OccPt2::RBox)),
+            Occupant::Robot => iter::once(OccPt2::Robot).chain(iter::once(OccPt2::Empty)),
+        }
+    }
+
+    fn char(&self) -> char {
+        match self {
+            OccPt2::Empty => '.',
+            OccPt2::Wall => '#',
+            OccPt2::LBox => '[',
+            OccPt2::RBox => ']',
+            OccPt2::Robot => '@',
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -152,9 +367,9 @@ impl Grid {
         from: Point,
         towards: Vector,
     ) -> impl Iterator<Item = (Point, Occupant)> + '_ {
-        self.iter_towards(from.clone(), towards.clone())
+        self.iter_towards(from, towards)
             .enumerate()
-            .map(move |(steps, occupant)| (from.clone() + towards.clone() * steps, *occupant))
+            .map(move |(steps, occupant)| (from + towards * steps, *occupant))
     }
 
     fn iter_towards(&self, from: Point, towards: Vector) -> VectorIterator<'_> {
@@ -201,20 +416,20 @@ impl<'a> Iterator for VectorIterator<'a> {
     type Item = &'a Occupant;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let pt = self.index.checked_add(self.towards.clone())?;
+        let pt = self.index.checked_add(self.towards)?;
         if pt.x >= self.grid.width {
             return None;
         }
         if pt.y >= self.grid.width {
             return None;
         }
-        let result = &self.grid[self.index.clone()];
+        let result = &self.grid[self.index];
         self.index = pt;
         Some(result)
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Point {
     x: usize,
     y: usize,
@@ -250,7 +465,7 @@ impl Add<Vector> for Point {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct Vector {
     dx: isize,
     dy: isize,
@@ -294,7 +509,7 @@ impl Occupant {
         }
     }
 }
-
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Direction {
     North,
     East,
@@ -388,7 +603,7 @@ mod tests {
         assert_eq!(part1(&parse(SMALL_EXAMPLE)), 2028);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
         assert_eq!(part2(&parse(BIG_EXAMPLE)), 9021);
     }
