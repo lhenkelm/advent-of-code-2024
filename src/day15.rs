@@ -85,7 +85,7 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
 }
 
 #[aoc(day15, part2)]
-fn part2((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> String {
+fn part2((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
     todo!()
 }
 
@@ -390,6 +390,6 @@ mod tests {
 
     #[ignore]
     fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
+        assert_eq!(part2(&parse(BIG_EXAMPLE)), 9021);
     }
 }
