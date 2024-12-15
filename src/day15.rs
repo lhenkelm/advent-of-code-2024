@@ -47,17 +47,18 @@ fn parse(input: &str) -> (Grid, Vec<Direction>) {
 #[aoc(day15, part1)]
 fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
     let mut warehouse = initial_warehouse.clone();
+    let mut robo_at = warehouse.robot_pos();
     for dir in instructions {
-        // FIXME: optimize here by having `robo_at` be mutable state between iterations,
-        // only searching once, initially?
-        let robo_at = warehouse.robot_pos();
         let next_at = robo_at + dir.vector();
         match warehouse[next_at] {
             Occupant::Empty => {
                 warehouse[next_at] = Occupant::Robot;
                 warehouse[robo_at] = Occupant::Empty;
+                robo_at = next_at;
             }
-            Occupant::Wall => (),
+            Occupant::Wall => {
+                continue;
+            }
             Occupant::Box => {
                 if let Some(next_empty) =
                     warehouse.find_towards(next_at, dir.vector(), |(_, occupant)| {
@@ -72,6 +73,7 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
                     warehouse[next_empty] = Occupant::Box;
                     warehouse[next_at] = Occupant::Robot;
                     warehouse[robo_at] = Occupant::Empty;
+                    robo_at = next_at;
                 }
             }
             Occupant::Robot => unreachable!(),
