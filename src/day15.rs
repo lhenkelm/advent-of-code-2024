@@ -90,8 +90,8 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
 #[aoc(day15, part2)]
 fn part2((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
     let mut warehouse = GridPt2::from_grid(initial_warehouse.clone());
+    let mut robo_at = warehouse.robot_pos();
     for &dir in instructions {
-        let robo_at = warehouse.robot_pos();
         let next_at = robo_at + dir.vector();
         match warehouse[next_at] {
             OccPt2::Empty => {
@@ -107,6 +107,7 @@ fn part2((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
             OccPt2::Robot => unreachable!(),
         }
         warehouse[robo_at] = OccPt2::Empty;
+        robo_at = next_at;
     }
     warehouse
         .enumerate_occupants()
