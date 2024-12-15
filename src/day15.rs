@@ -62,6 +62,7 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
                 if let Some(next_empty) =
                     warehouse.find_towards(next_at.clone(), dir.vector(), Occupant::Empty)
                 {
+                    debug_assert_eq!(warehouse[next_empty.clone()], Occupant::Empty);
                     warehouse[next_empty] = Occupant::Box;
                     warehouse[next_at] = Occupant::Robot;
                     warehouse[robo_at] = Occupant::Empty;
