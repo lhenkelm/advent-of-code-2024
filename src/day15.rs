@@ -203,8 +203,9 @@ impl<'a> Iterator for VectorIterator<'a> {
         if pt.y >= self.grid.width {
             return None;
         }
+        let result = &self.grid[self.index.clone()];
         self.index = pt;
-        Some(&self.grid[self.index.clone()])
+        Some(result)
     }
 }
 
