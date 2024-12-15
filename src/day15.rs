@@ -1,3 +1,5 @@
+use std::ops::{Add, Index, IndexMut, Mul};
+
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools; // for next_tuple
 
@@ -47,7 +49,36 @@ fn parse(input: &str) -> (Grid, Vec<Direction>) {
 
 #[aoc(day15, part1)]
 fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
-    todo!()
+    let mut warehouse = initial_warehouse.clone();
+    for dir in instructions {
+        // FIXME: optimize here by having `robo_at` be mutable state between iterations,
+        // only searching once, initially?
+        let robo_at = warehouse.robot_pos();
+        let next_at = robo_at.clone() + dir.vector();
+        match warehouse[next_at.clone()] {
+            Occupant::Empty => {
+                warehouse[next_at] = Occupant::Robot;
+                warehouse[robo_at] = Occupant::Empty;
+            }
+            Occupant::Wall => (),
+            Occupant::Box => {
+                if let Some(next_empty) =
+                    warehouse.find_towards(next_at.clone(), dir.vector(), Occupant::Empty)
+                {
+                    warehouse[next_empty] = Occupant::Box;
+                    warehouse[next_at] = Occupant::Robot;
+                    warehouse[robo_at] = Occupant::Empty;
+                }
+            }
+            Occupant::Robot => unreachable!(),
+        }
+    }
+
+    warehouse
+        .enumerate_occupants()
+        .filter(|(_, occ)| *occ == Occupant::Box)
+        .map(|(point, _)| (point.y * 100 + point.x) as u64)
+        .sum()
 }
 
 #[aoc(day15, part2)]
@@ -55,12 +86,165 @@ fn part2((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> String {
     todo!()
 }
 
+#[derive(Clone)]
 struct Grid {
     data: Vec<Occupant>,
     height: usize,
     width: usize,
 }
 
+impl Index<Point> for Grid {
+    type Output = Occupant;
+
+    fn index(&self, index: Point) -> &Self::Output {
+        &self.data[self.flat_index(index)]
+    }
+}
+
+impl IndexMut<Point> for Grid {
+    fn index_mut(&mut self, index: Point) -> &mut Self::Output {
+        let idx = self.flat_index(index);
+        &mut self.data[idx]
+    }
+}
+
+impl Grid {
+    fn flat_index(&self, index: Point) -> usize {
+        debug_assert!(index.x < self.width);
+        debug_assert!(index.y < self.height);
+        index.x + index.y * self.width
+    }
+
+    fn point_index(&self, index: usize) -> Point {
+        debug_assert!(index < self.data.len());
+        Point {
+            x: index % self.width,
+            y: index / self.width,
+        }
+    }
+
+    fn robot_pos(&self) -> Point {
+        // FIXME: this is quite suboptimal, makes me prefer the keeping-the-agent-
+        // -separately approach from Guard Gallivant
+        let flat_idx = self
+            .data
+            .iter()
+            .enumerate()
+            .find(|(_, occ)| **occ == Occupant::Robot)
+            .unwrap()
+            .0;
+        self.point_index(flat_idx)
+    }
+
+    fn find_towards(&self, from: Point, towards: Vector, occupant: Occupant) -> Option<Point> {
+        let found = self
+            .enumerate_towards(from, towards)
+            .find(|(_, occ)| *occ == occupant)?;
+        Some(found.0)
+    }
+
+    fn enumerate_towards(
+        &self,
+        from: Point,
+        towards: Vector,
+    ) -> impl Iterator<Item = (Point, Occupant)> + '_ {
+        self.iter_towards(from.clone(), towards.clone())
+            .enumerate()
+            .map(move |(steps, occupant)| (from.clone() + towards.clone() * steps, *occupant))
+    }
+
+    fn iter_towards(&self, from: Point, towards: Vector) -> VectorIterator<'_> {
+        VectorIterator {
+            index: from,
+            towards,
+            grid: self,
+        }
+    }
+
+    fn enumerate_occupants(&self) -> impl Iterator<Item = (Point, Occupant)> + '_ {
+        self.data
+            .iter()
+            .enumerate()
+            .map(|(idx, &occ)| (self.point_index(idx), occ))
+    }
+}
+
+struct VectorIterator<'a> {
+    index: Point,
+    towards: Vector,
+    grid: &'a Grid,
+}
+
+impl<'a> Iterator for VectorIterator<'a> {
+    type Item = &'a Occupant;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let pt = self.index.checked_add(self.towards.clone())?;
+        if pt.x >= self.grid.width {
+            return None;
+        }
+        if pt.y >= self.grid.width {
+            return None;
+        }
+        self.index = pt;
+        Some(&self.grid[self.index.clone()])
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Point {
+    x: usize,
+    y: usize,
+}
+
+impl Point {
+    fn checked_add(&self, rhs: Vector) -> Option<Point> {
+        let x = self.x as isize + rhs.dx;
+        let y = self.y as isize + rhs.dy;
+        if x < 0 {
+            return None;
+        }
+        if y < 0 {
+            return None;
+        }
+        let x = x.try_into().unwrap();
+        let y = y.try_into().unwrap();
+        Some(Point { x, y })
+    }
+}
+
+impl Add<Vector> for Point {
+    type Output = Point;
+
+    fn add(self, rhs: Vector) -> Self::Output {
+        let x = self.x as isize + rhs.dx;
+        let y = self.y as isize + rhs.dy;
+        debug_assert!(x > -1);
+        debug_assert!(y > -1);
+        let x = x as usize;
+        let y = y as usize;
+        Point { x, y }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Vector {
+    dx: isize,
+    dy: isize,
+}
+
+impl Mul<usize> for Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: usize) -> Self::Output {
+        Self::Output {
+            dx: self.dx * rhs as isize,
+            dy: self.dy * rhs as isize,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Occupant {
     Wall,
     Box,
@@ -73,6 +257,17 @@ enum Direction {
     East,
     South,
     West,
+}
+
+impl Direction {
+    fn vector(&self) -> Vector {
+        match self {
+            Self::North => Vector { dx: 0, dy: -1 },
+            Self::East => Vector { dx: 1, dy: 0 },
+            Self::South => Vector { dx: 0, dy: 1 },
+            Self::West => Vector { dx: -1, dy: 0 },
+        }
+    }
 }
 
 #[cfg(test)]
@@ -117,12 +312,12 @@ mod tests {
             <^^>>>vv<v>>v<<
     "};
 
-    #[ignore]
+    #[test]
     fn part1_big_example() {
         assert_eq!(part1(&parse(BIG_EXAMPLE)), 10092);
     }
 
-    #[ignore]
+    #[test]
     fn part1_small_example() {
         assert_eq!(part1(&parse(SMALL_EXAMPLE)), 2028);
     }
