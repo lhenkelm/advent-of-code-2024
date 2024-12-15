@@ -1,4 +1,7 @@
-use std::ops::{Add, Index, IndexMut, Mul};
+use std::{
+    fmt::{self, Display, Formatter},
+    ops::{Add, Index, IndexMut, Mul},
+};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools; // for next_tuple
@@ -16,13 +19,10 @@ fn parse(input: &str) -> (Grid, Vec<Direction>) {
             width = Some(line.len());
         }
         for c in line.chars() {
-            match c {
-                '#' => map.push(Occupant::Wall),
-                '.' => map.push(Occupant::Empty),
-                'O' => map.push(Occupant::Box),
-                '@' => map.push(Occupant::Robot),
-                _ => panic!("Unexpected warehouse occupant: '{}'", c),
-            }
+            map.push(
+                Occupant::from_char(c)
+                    .unwrap_or_else(|| panic!("Unexpected warehouse occupant: '{}'", c)),
+            );
         }
     }
     let width = width.unwrap();
@@ -36,12 +36,8 @@ fn parse(input: &str) -> (Grid, Vec<Direction>) {
     let instructions = instruct_str
         .chars()
         .filter(|c| !c.is_whitespace())
-        .map(|c| match c {
-            '^' => Direction::North,
-            '>' => Direction::East,
-            'v' => Direction::South,
-            '<' => Direction::West,
-            _ => panic!("Unexpected robot instruction: {c}"),
+        .map(|c| {
+            Direction::from_char(c).unwrap_or_else(|| panic!("Unexpected robot instruction: {}", c))
         })
         .collect();
     (grid, instructions)
@@ -51,6 +47,7 @@ fn parse(input: &str) -> (Grid, Vec<Direction>) {
 fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
     let mut warehouse = initial_warehouse.clone();
     for dir in instructions {
+        println!("{}, then {}", &warehouse, dir);
         // FIXME: optimize here by having `robo_at` be mutable state between iterations,
         // only searching once, initially?
         let robo_at = warehouse.robot_pos();
@@ -73,6 +70,7 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
             Occupant::Robot => unreachable!(),
         }
     }
+    println!("{}", &warehouse);
 
     warehouse
         .enumerate_occupants()
@@ -167,6 +165,24 @@ impl Grid {
             .enumerate()
             .map(|(idx, &occ)| (self.point_index(idx), occ))
     }
+
+    fn format(&self) -> String {
+        let mut result = String::with_capacity(self.height * (self.width + 1));
+        for (idx, occupant) in self.data.iter().enumerate() {
+            if idx % self.width == 0 && idx > 0 {
+                result.push('\n');
+            }
+            result.push(occupant.char());
+        }
+        result.push('\n');
+        result
+    }
+}
+
+impl Display for Grid {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.format())
+    }
 }
 
 struct VectorIterator<'a> {
@@ -252,6 +268,26 @@ enum Occupant {
     Robot,
 }
 
+impl Occupant {
+    fn char(&self) -> char {
+        match self {
+            Self::Wall => '#',
+            Self::Box => 'O',
+            Self::Empty => '.',
+            Self::Robot => '@',
+        }
+    }
+    fn from_char(ch: char) -> Option<Self> {
+        match ch {
+            '#' => Some(Self::Wall),
+            'O' => Some(Self::Box),
+            '.' => Some(Self::Empty),
+            '@' => Some(Self::Robot),
+            _ => None,
+        }
+    }
+}
+
 enum Direction {
     North,
     East,
@@ -268,8 +304,31 @@ impl Direction {
             Self::West => Vector { dx: -1, dy: 0 },
         }
     }
+
+    fn char(&self) -> char {
+        match self {
+            Self::North => '^',
+            Self::East => '>',
+            Self::South => 'v',
+            Self::West => '<',
+        }
+    }
+    fn from_char(ch: char) -> Option<Self> {
+        match ch {
+            '^' => Some(Self::North),
+            '>' => Some(Self::East),
+            'v' => Some(Self::South),
+            '<' => Some(Self::West),
+            _ => None,
+        }
+    }
 }
 
+impl Display for Direction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.char())
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
