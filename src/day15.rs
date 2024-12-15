@@ -60,9 +60,15 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
             Occupant::Wall => (),
             Occupant::Box => {
                 if let Some(next_empty) =
-                    warehouse.find_towards(next_at.clone(), dir.vector(), Occupant::Empty)
+                    warehouse.find_towards(next_at.clone(), dir.vector(), |(_, occupant)| {
+                        *occupant == Occupant::Empty || *occupant == Occupant::Wall
+                    })
                 {
-                    debug_assert_eq!(warehouse[next_empty.clone()], Occupant::Empty);
+                    let empty_cand = warehouse[next_empty.clone()];
+                    if empty_cand == Occupant::Wall {
+                        continue;
+                    }
+                    debug_assert_eq!(empty_cand, Occupant::Empty);
                     warehouse[next_empty] = Occupant::Box;
                     warehouse[next_at] = Occupant::Robot;
                     warehouse[robo_at] = Occupant::Empty;
@@ -135,10 +141,11 @@ impl Grid {
         self.point_index(flat_idx)
     }
 
-    fn find_towards(&self, from: Point, towards: Vector, occupant: Occupant) -> Option<Point> {
-        let found = self
-            .enumerate_towards(from, towards)
-            .find(|(_, occ)| *occ == occupant)?;
+    fn find_towards<P>(&self, from: Point, towards: Vector, predicate: P) -> Option<Point>
+    where
+        P: FnMut(&(Point, Occupant)) -> bool,
+    {
+        let found = self.enumerate_towards(from, towards).find(predicate)?;
         Some(found.0)
     }
 
