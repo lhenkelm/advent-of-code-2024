@@ -47,7 +47,6 @@ fn parse(input: &str) -> (Grid, Vec<Direction>) {
 fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
     let mut warehouse = initial_warehouse.clone();
     for dir in instructions {
-        println!("{}, then {}", &warehouse, dir);
         // FIXME: optimize here by having `robo_at` be mutable state between iterations,
         // only searching once, initially?
         let robo_at = warehouse.robot_pos();
@@ -77,7 +76,6 @@ fn part1((initial_warehouse, instructions): &(Grid, Vec<Direction>)) -> u64 {
             Occupant::Robot => unreachable!(),
         }
     }
-    println!("{}", &warehouse);
 
     warehouse
         .enumerate_occupants()
