@@ -67,6 +67,7 @@ fn part2(maze: &Maze) -> u64 {
             distance: distances[&rudi],
         }
     })
+    // confusingly, this ignores the Ord implementation of QueueItem
     .min_set();
 
     let helper = opti_deer.iter().map(|x| x.distance).min().unwrap();
