@@ -34,6 +34,26 @@ fn parse(input: &str) -> Maze {
 
 #[aoc(day16, part1)]
 fn part1(maze: &Maze) -> u64 {
+    let (distances, _) = kinda_edsger(maze);
+    let end = maze.find_end();
+    [
+        Direction::North,
+        Direction::East,
+        Direction::South,
+        Direction::West,
+    ]
+    .iter()
+    .map(|&d| distances[&Reindeer { at: end, to: d }])
+    .min()
+    .unwrap()
+}
+
+#[aoc(day16, part2)]
+fn part2(maze: &Maze) -> u64 {
+    todo!()
+}
+
+fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, Reindeer>) {
     let mut queue = BinaryHeap::new();
     let mut distances = FxHashMap::default();
     let mut previous = FxHashMap::default();
@@ -69,22 +89,7 @@ fn part1(maze: &Maze) -> u64 {
             }
         }
     }
-    let end = maze.find_end();
-    [
-        Direction::North,
-        Direction::East,
-        Direction::South,
-        Direction::West,
-    ]
-    .iter()
-    .map(|&d| distances[&Reindeer { at: end, to: d }])
-    .min()
-    .unwrap()
-}
-
-#[aoc(day16, part2)]
-fn part2(maze: &Maze) -> u64 {
-    todo!()
+    (distances, previous)
 }
 
 struct Maze {
