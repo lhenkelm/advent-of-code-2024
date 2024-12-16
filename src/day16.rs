@@ -60,14 +60,14 @@ fn part2(maze: &Maze) -> u64 {
         Direction::West,
     ]
     .iter()
-    .map(|&d| {
+    .filter_map(|&d| {
         let rudi = Reindeer { at: end, to: d };
-        QueueItem {
+        let dist = *distances.get(&rudi)?;
+        Some(QueueItem {
             reindeer: rudi,
-            distance: distances[&rudi],
-        }
+            distance: dist,
+        })
     })
-    // confusingly, this ignores the Ord implementation of QueueItem
     .min_set();
 
     let helper = opti_deer.iter().map(|x| x.distance).min().unwrap();
@@ -220,13 +220,7 @@ struct QueueItem {
 
 impl Ord for QueueItem {
     fn cmp(&self, other: &Self) -> Ordering {
-        match other.distance.cmp(&self.distance) {
-            // flip the ordering such that reindeer with less distance are considered "greater"
-            // to make the max-heap-by-default std::collections::BinaryHeap a min-heap
-            Ordering::Greater => Ordering::Less,
-            Ordering::Less => Ordering::Greater,
-            Ordering::Equal => Ordering::Equal,
-        }
+        other.distance.cmp(&self.distance)
     }
 }
 
