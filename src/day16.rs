@@ -83,7 +83,7 @@ fn part1(maze: &Maze) -> u64 {
 }
 
 #[aoc(day16, part2)]
-fn part2(maze: &Maze) -> String {
+fn part2(maze: &Maze) -> u64 {
     todo!()
 }
 
@@ -355,7 +355,12 @@ mod tests {
     }
 
     #[ignore]
-    fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
+    fn part2_example_1() {
+        assert_eq!(part2(&parse(EXAMPLE_1)), 45);
+    }
+
+    #[ignore]
+    fn part2_example_2() {
+        assert_eq!(part2(&parse(EXAMPLE_2)), 64);
     }
 }
