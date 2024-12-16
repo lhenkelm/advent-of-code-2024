@@ -112,10 +112,8 @@ fn kinda_edsger(
 
     let mut min_end = u64::MAX;
     while let Some(current_best) = queue.pop() {
-        if maze[current_best.reindeer.at] == Location::End {
-            if current_best.distance < min_end {
-                min_end = current_best.distance;
-            }
+        if maze[current_best.reindeer.at] == Location::End && current_best.distance < min_end {
+            min_end = current_best.distance;
         }
         if current_best.distance > min_end {
             continue;
