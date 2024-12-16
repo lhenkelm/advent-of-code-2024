@@ -77,18 +77,10 @@ fn part2(maze: &Maze) -> u64 {
         todo.push(end_deer.reindeer);
     }
     while let Some(best_reindeer) = todo.pop() {
-        //if distances[&best_reindeer] > helper {
-        //    continue;
-        //}
-        //dbg!(best_reindeer);
-        //dbg!(distances[&best_reindeer]);
         debug_assert!(distances[&best_reindeer] <= helper);
         optimal_path_seats.insert(best_reindeer.at);
         if let Some(previous_reindeer) = previous.get_mut(&best_reindeer) {
             for previous_reindeer in previous_reindeer.drain(..) {
-                //if distances[&previous_reindeer] > distances[&best_reindeer] {
-                //    continue;
-                //}
                 debug_assert!(distances[&previous_reindeer] < distances[&best_reindeer]);
                 todo.push(previous_reindeer);
             }
