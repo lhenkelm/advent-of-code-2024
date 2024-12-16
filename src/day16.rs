@@ -1,17 +1,59 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+
 #[aoc_generator(day16)]
-fn parse(input: &str) -> String {
-    todo!()
+fn parse(input: &str) -> Maze {
+    let mut width = 0;
+    let mut height = 0;
+    let mut data = Vec::with_capacity(input.len());
+    for (y, line) in input.trim().lines().enumerate() {
+        height = y;
+        for (x, c) in line.chars().enumerate() {
+            width = x;
+            data.push(match c {
+                '#' => Location::Wall,
+                '.' => Location::Empty,
+                'S' => Location::Start,
+                'E' => Location::End,
+                _ => panic!("Invalid character at ({}, {}): {}", x, y, c),
+            });
+        }
+    }
+    width += 1;
+    height += 1;
+    debug_assert_eq!(data.len(), width * height);
+    Maze {
+        data,
+        width,
+        height,
+    }
 }
 
 #[aoc(day16, part1)]
-fn part1(input: &str) -> u64 {
+fn part1(maze: &Maze) -> u64 {
     todo!()
 }
 
 #[aoc(day16, part2)]
-fn part2(input: &str) -> String {
+fn part2(maze: &Maze) -> String {
     todo!()
+}
+
+struct Maze {
+    data: Vec<Location>,
+    width: usize,
+    height: usize,
+}
+
+enum Location {
+    Empty,
+    Wall,
+    Start,
+    End,
+}
+
+struct Point {
+    x: usize,
+    y: usize,
 }
 
 #[cfg(test)]
