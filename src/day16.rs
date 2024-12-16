@@ -136,25 +136,24 @@ fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, V
                 true => current_best.distance + 1,     // walking costs 1
                 false => current_best.distance + 1000, // turning costs 1000
             };
-            let ord = new_distance.cmp(distances.get(&nearest_reindeer).unwrap_or(&u64::MAX));
-            if ord == Ordering::Greater {
-                continue;
-            }
-            if ord == Ordering::Less {
-                distances.insert(nearest_reindeer, new_distance);
-                queue.push(QueueItem {
-                    reindeer: nearest_reindeer,
-                    distance: new_distance,
-                });
-                previous.insert(nearest_reindeer, vec![current_best.reindeer]);
-            }
-            if ord == Ordering::Equal {
-                // it is possible that more than one optimal path leads to the same location,
-                // so we need to keep track of all previous Reindeer that lead to the same location
-                previous
-                    .get_mut(&nearest_reindeer)
-                    .unwrap()
-                    .push(current_best.reindeer);
+            match new_distance.cmp(distances.get(&nearest_reindeer).unwrap_or(&u64::MAX)) {
+                Ordering::Greater => continue,
+                Ordering::Less => {
+                    distances.insert(nearest_reindeer, new_distance);
+                    queue.push(QueueItem {
+                        reindeer: nearest_reindeer,
+                        distance: new_distance,
+                    });
+                    previous.insert(nearest_reindeer, vec![current_best.reindeer]);
+                }
+                Ordering::Equal => {
+                    // it is possible that more than one optimal path leads to the same location,
+                    // so we need to keep track of all previous Reindeer that lead to the same location
+                    previous
+                        .get_mut(&nearest_reindeer)
+                        .unwrap()
+                        .push(current_best.reindeer);
+                }
             }
         }
     }
