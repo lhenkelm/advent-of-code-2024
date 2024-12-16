@@ -1,4 +1,8 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+use std::ops::{Add, Index};
 
 #[aoc_generator(day16)]
 fn parse(input: &str) -> Maze {
@@ -30,7 +34,52 @@ fn parse(input: &str) -> Maze {
 
 #[aoc(day16, part1)]
 fn part1(maze: &Maze) -> u64 {
-    todo!()
+    let mut queue = BinaryHeap::new();
+    let mut distances = FxHashMap::default();
+    let mut previous = FxHashMap::default();
+
+    let start = maze.find_start();
+    let start = Reindeer {
+        at: start,
+        to: Direction::East,
+    };
+
+    distances.insert(start, 0);
+    queue.push(QueueItem {
+        reindeer: start,
+        distance: 0,
+    });
+
+    while let Some(current_best) = queue.pop() {
+        for nearest_reindeer in current_best.reindeer.reachable() {
+            if maze[nearest_reindeer.at] == Location::Wall {
+                continue;
+            }
+            let new_distance = match nearest_reindeer.to == current_best.reindeer.to {
+                true => current_best.distance + 1,     // walking costs 1
+                false => current_best.distance + 1000, // turning costs 1000
+            };
+            if new_distance < *distances.get(&nearest_reindeer).unwrap_or(&u64::MAX) {
+                distances.insert(nearest_reindeer, new_distance);
+                previous.insert(nearest_reindeer, current_best.reindeer);
+                queue.push(QueueItem {
+                    reindeer: nearest_reindeer,
+                    distance: new_distance,
+                });
+            }
+        }
+    }
+    let end = maze.find_end();
+    [
+        Direction::North,
+        Direction::East,
+        Direction::South,
+        Direction::West,
+    ]
+    .iter()
+    .map(|&d| distances[&Reindeer { at: end, to: d }])
+    .min()
+    .unwrap()
 }
 
 #[aoc(day16, part2)]
@@ -44,6 +93,72 @@ struct Maze {
     height: usize,
 }
 
+impl Index<Point> for Maze {
+    type Output = Location;
+
+    fn index(&self, point: Point) -> &Self::Output {
+        &self.data[self.flat_index(point)]
+    }
+}
+
+impl Maze {
+    fn flat_index(&self, Point { x, y }: Point) -> usize {
+        debug_assert!(x < self.width);
+        debug_assert!(y < self.height);
+        y * self.width + x
+    }
+
+    fn point_index(&self, index: usize) -> Point {
+        debug_assert!(index < self.data.len());
+        Point {
+            x: index % self.width,
+            y: index / self.width,
+        }
+    }
+
+    fn find_start(&self) -> Point {
+        self.data
+            .iter()
+            .position(|&l| l == Location::Start)
+            .map(|i| self.point_index(i))
+            .unwrap()
+    }
+
+    fn find_end(&self) -> Point {
+        self.data
+            .iter()
+            .position(|&l| l == Location::End)
+            .map(|i| self.point_index(i))
+            .unwrap()
+    }
+    /// The set of all possible Reindeer reachable from the given Reindeer
+    ///
+    /// (Including direction _and_ position, as distinct Reindeer, excluding the given Reindeer)
+    /// Implemented as a kind of "flood fill", but not (just) for the set of none-wall Maze locations,
+    /// but rather the state-space of reindeer positions and directions.
+    /// A pair of Reindeer are reachable if
+    ///  - they are at the same point, but turned 90° left or right w.r.t. one another
+    ///  - they are facing to the same direction, and one Reindeer is one step ahead of the other
+    fn walk(&self, from: Reindeer) -> FxHashSet<Reindeer> {
+        debug_assert_ne!(self[from.at], Location::Wall);
+        let mut reachable = FxHashSet::default();
+        exhaust_reindeer(from, &mut reachable, self);
+        reachable
+    }
+}
+
+fn exhaust_reindeer(from: Reindeer, reachable: &mut FxHashSet<Reindeer>, maze: &Maze) {
+    for next in from.reachable() {
+        if maze[next.at] == Location::Wall {
+            continue;
+        }
+        if reachable.insert(next) {
+            exhaust_reindeer(next, reachable, maze);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Location {
     Empty,
     Wall,
@@ -51,9 +166,139 @@ enum Location {
     End,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct QueueItem {
+    reindeer: Reindeer,
+    distance: u64,
+}
+
+impl Ord for QueueItem {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match other.distance.cmp(&self.distance) {
+            // flip the ordering such that reindeer with less distance are considered "greater"
+            // to make the max-heap-by-default std::collections::BinaryHeap a min-heap
+            Ordering::Greater => Ordering::Less,
+            Ordering::Less => Ordering::Greater,
+            Ordering::Equal => Ordering::Equal,
+        }
+    }
+}
+
+impl PartialOrd for QueueItem {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct Reindeer {
+    at: Point,
+    to: Direction,
+}
+
+impl Reindeer {
+    fn turn_left(&self) -> Self {
+        Reindeer {
+            at: self.at,
+            to: self.to.turn_left(),
+        }
+    }
+
+    fn turn_right(&self) -> Self {
+        Reindeer {
+            at: self.at,
+            to: self.to.turn_right(),
+        }
+    }
+
+    fn walk(&self) -> Self {
+        Reindeer {
+            at: self.at + self.to.vector(),
+            to: self.to,
+        }
+    }
+
+    fn reachable(&self) -> [Reindeer; 3] {
+        [self.turn_left(), self.turn_right(), self.walk()]
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
     x: usize,
     y: usize,
+}
+
+impl Point {
+    fn neighbours(&self) -> [Point; 4] {
+        [
+            *self + Direction::North.vector(),
+            *self + Direction::East.vector(),
+            *self + Direction::South.vector(),
+            *self + Direction::West.vector(),
+        ]
+    }
+}
+
+impl Add<Vector> for Point {
+    type Output = Point;
+
+    fn add(self, Vector { dx, dy }: Vector) -> Self::Output {
+        let x = self.x as isize + dx;
+        let y = self.y as isize + dy;
+        debug_assert!(x >= 0);
+        debug_assert!(y >= 0);
+        Point {
+            x: x as usize,
+            y: y as usize,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
+impl Direction {
+    fn vector(&self) -> Vector {
+        match self {
+            Direction::North => Vector { dx: 0, dy: -1 },
+            Direction::East => Vector { dx: 1, dy: 0 },
+            Direction::South => Vector { dx: 0, dy: 1 },
+            Direction::West => Vector { dx: -1, dy: 0 },
+        }
+    }
+
+    fn turn_left(&self) -> Self {
+        match self {
+            Direction::North => Direction::West,
+            Direction::East => Direction::North,
+            Direction::South => Direction::East,
+            Direction::West => Direction::South,
+        }
+    }
+
+    fn turn_right(&self) -> Self {
+        match self {
+            Direction::North => Direction::East,
+            Direction::East => Direction::South,
+            Direction::South => Direction::West,
+            Direction::West => Direction::North,
+        }
+    }
+
+    fn neighbouring_directions(&self) -> [Direction; 2] {
+        [self.turn_left(), self.turn_right()]
+    }
+}
+
+struct Vector {
+    dx: isize,
+    dy: isize,
 }
 
 #[cfg(test)]
@@ -99,12 +344,12 @@ mod tests {
             #################
     "};
 
-    #[ignore]
+    #[test]
     fn part1_example_1() {
         assert_eq!(part1(&parse(EXAMPLE_1)), 7036);
     }
 
-    #[ignore]
+    #[test]
     fn part1_example_2() {
         assert_eq!(part1(&parse(EXAMPLE_2)), 11048);
     }
