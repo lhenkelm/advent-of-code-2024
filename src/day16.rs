@@ -68,7 +68,7 @@ fn part2(maze: &Maze) -> u64 {
             distance: dist,
         })
     })
-    .min_set();
+    .max_set();
 
     let helper = opti_deer.iter().map(|x| x.distance).min().unwrap();
 
