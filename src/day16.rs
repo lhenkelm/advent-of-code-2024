@@ -68,6 +68,8 @@ fn part2(maze: &Maze) -> u64 {
             distance: dist,
         })
     })
+    // Because the Ord implmentation for QueueItem inverts distance order,
+    // here we select max_set to get the set with smallest distances.
     .max_set();
 
     let helper = opti_deer.iter().map(|x| x.distance).min().unwrap();
@@ -217,6 +219,11 @@ struct QueueItem {
 }
 
 impl Ord for QueueItem {
+    // We stick these into a std::collections::BinaryHeap above, to implement
+    // the queue in Dijkstra's shortest path algo. However, the aforementioned struct
+    // implements max-heap, and we want a min-heap. So this custom impl. flips
+    // when Ordering::Less is returned vs Ordering::Greater, by flipping
+    // callee (self) and arg (other) when forwarding to u64::cmp.
     fn cmp(&self, other: &Self) -> Ordering {
         other.distance.cmp(&self.distance)
     }
