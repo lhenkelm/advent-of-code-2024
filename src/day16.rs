@@ -37,14 +37,14 @@ fn parse(input: &str) -> Maze {
 fn part1(maze: &Maze) -> u64 {
     let (distances, _) = kinda_edsger(maze, false);
     let end = maze.find_end();
-    [
+    *[
         Direction::North,
         Direction::East,
         Direction::South,
         Direction::West,
     ]
     .iter()
-    .map(|&d| distances[&Reindeer { at: end, to: d }])
+    .filter_map(|&d| distances.get(&Reindeer { at: end, to: d }))
     .min()
     .unwrap()
 }
@@ -110,7 +110,16 @@ fn kinda_edsger(
         distance: 0,
     });
 
+    let mut min_end = u64::MAX;
     while let Some(current_best) = queue.pop() {
+        if maze[current_best.reindeer.at] == Location::End {
+            if current_best.distance < min_end {
+                min_end = current_best.distance;
+            }
+        }
+        if current_best.distance > min_end {
+            continue;
+        }
         for nearest_reindeer in current_best.reindeer.reachable() {
             if maze[nearest_reindeer.at] == Location::Wall {
                 continue;
