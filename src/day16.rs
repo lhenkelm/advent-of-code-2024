@@ -1,7 +1,9 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use itertools::Itertools;
+use nalgebra::distance;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, VecDeque};
 use std::ops::{Add, Index};
 
 #[aoc_generator(day16)]
@@ -50,7 +52,70 @@ fn part1(maze: &Maze) -> u64 {
 
 #[aoc(day16, part2)]
 fn part2(maze: &Maze) -> u64 {
-    todo!()
+    let (distances, mut previous) = kinda_edsger(maze);
+    let end = maze.find_end();
+    let opti_deer = [
+        Direction::North,
+        Direction::East,
+        Direction::South,
+        Direction::West,
+    ]
+    .iter()
+    .map(|&d| {
+        let rudi = Reindeer { at: end, to: d };
+        QueueItem {
+            reindeer: rudi,
+            distance: distances[&rudi],
+        }
+    })
+    .min_set();
+
+    let helper = opti_deer.iter().map(|x| x.distance).min().unwrap();
+
+    let mut optimal_path_seats = FxHashSet::default();
+    let mut todo = Vec::new();
+    for end_deer in opti_deer {
+        todo.push(end_deer.reindeer);
+    }
+    while let Some(best_reindeer) = todo.pop() {
+        //if distances[&best_reindeer] > helper {
+        //    continue;
+        //}
+        //dbg!(best_reindeer);
+        //dbg!(distances[&best_reindeer]);
+        debug_assert!(distances[&best_reindeer] <= helper);
+        optimal_path_seats.insert(best_reindeer.at);
+        if let Some(previous_reindeer) = previous.get_mut(&best_reindeer) {
+            for previous_reindeer in previous_reindeer.drain(..) {
+                //if distances[&previous_reindeer] > distances[&best_reindeer] {
+                //    continue;
+                //}
+                debug_assert!(distances[&previous_reindeer] < distances[&best_reindeer]);
+                todo.push(previous_reindeer);
+            }
+        }
+    }
+    // print the optimal paths
+    for y in 0..maze.height {
+        for x in 0..maze.width {
+            let point = Point { x, y };
+            let c = match maze[point] {
+                Location::Wall => '#',
+                Location::Empty => '.',
+                Location::Start => 'S',
+                Location::End => 'E',
+            };
+            let c = if optimal_path_seats.contains(&point) {
+                'O'
+            } else {
+                c
+            };
+            print!("{}", c);
+        }
+        println!();
+    }
+
+    optimal_path_seats.len() as u64
 }
 
 fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, Vec<Reindeer>>) {
@@ -83,17 +148,22 @@ fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, V
             if ord == Ordering::Greater {
                 continue;
             }
-            // it is possible that more than one optimal path leads to the same location,
-            // so we need to keep track of all previous Reindeer that lead to the same location
-            distances.insert(nearest_reindeer, new_distance);
-            queue.push(QueueItem {
-                reindeer: nearest_reindeer,
-                distance: new_distance,
-            });
-            previous
-                .entry(nearest_reindeer)
-                .or_insert(vec![])
-                .push(current_best.reindeer);
+            if ord == Ordering::Less {
+                distances.insert(nearest_reindeer, new_distance);
+                queue.push(QueueItem {
+                    reindeer: nearest_reindeer,
+                    distance: new_distance,
+                });
+                previous.insert(nearest_reindeer, vec![current_best.reindeer]);
+            }
+            if ord == Ordering::Equal {
+                // it is possible that more than one optimal path leads to the same location,
+                // so we need to keep track of all previous Reindeer that lead to the same location
+                previous
+                    .get_mut(&nearest_reindeer)
+                    .unwrap()
+                    .push(current_best.reindeer);
+            }
         }
     }
     (distances, previous)
@@ -366,12 +436,12 @@ mod tests {
         assert_eq!(part1(&parse(EXAMPLE_2)), 11048);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example_1() {
         assert_eq!(part2(&parse(EXAMPLE_1)), 45);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example_2() {
         assert_eq!(part2(&parse(EXAMPLE_2)), 64);
     }
