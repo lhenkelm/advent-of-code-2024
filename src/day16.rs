@@ -53,7 +53,7 @@ fn part2(maze: &Maze) -> u64 {
     todo!()
 }
 
-fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, Reindeer>) {
+fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, Vec<Reindeer>>) {
     let mut queue = BinaryHeap::new();
     let mut distances = FxHashMap::default();
     let mut previous = FxHashMap::default();
@@ -79,14 +79,21 @@ fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, R
                 true => current_best.distance + 1,     // walking costs 1
                 false => current_best.distance + 1000, // turning costs 1000
             };
-            if new_distance < *distances.get(&nearest_reindeer).unwrap_or(&u64::MAX) {
-                distances.insert(nearest_reindeer, new_distance);
-                previous.insert(nearest_reindeer, current_best.reindeer);
-                queue.push(QueueItem {
-                    reindeer: nearest_reindeer,
-                    distance: new_distance,
-                });
+            let ord = new_distance.cmp(distances.get(&nearest_reindeer).unwrap_or(&u64::MAX));
+            if ord == Ordering::Greater {
+                continue;
             }
+            // it is possible that more than one optimal path leads to the same location,
+            // so we need to keep track of all previous Reindeer that lead to the same location
+            distances.insert(nearest_reindeer, new_distance);
+            queue.push(QueueItem {
+                reindeer: nearest_reindeer,
+                distance: new_distance,
+            });
+            previous
+                .entry(nearest_reindeer)
+                .or_insert(vec![])
+                .push(current_best.reindeer);
         }
     }
     (distances, previous)
