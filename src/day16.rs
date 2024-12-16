@@ -35,7 +35,7 @@ fn parse(input: &str) -> Maze {
 
 #[aoc(day16, part1)]
 fn part1(maze: &Maze) -> u64 {
-    let (distances, _) = kinda_edsger(maze);
+    let (distances, _) = kinda_edsger(maze, false);
     let end = maze.find_end();
     [
         Direction::North,
@@ -51,7 +51,7 @@ fn part1(maze: &Maze) -> u64 {
 
 #[aoc(day16, part2)]
 fn part2(maze: &Maze) -> u64 {
-    let (distances, mut previous) = kinda_edsger(maze);
+    let (distances, mut previous) = kinda_edsger(maze, true);
     let end = maze.find_end();
     let opti_deer = [
         Direction::North,
@@ -90,7 +90,10 @@ fn part2(maze: &Maze) -> u64 {
     optimal_path_seats.len() as u64
 }
 
-fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, Vec<Reindeer>>) {
+fn kinda_edsger(
+    maze: &Maze,
+    track_paths: bool,
+) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, Vec<Reindeer>>) {
     let mut queue = BinaryHeap::new();
     let mut distances = FxHashMap::default();
     let mut previous = FxHashMap::default();
@@ -124,9 +127,15 @@ fn kinda_edsger(maze: &Maze) -> (FxHashMap<Reindeer, u64>, FxHashMap<Reindeer, V
                         reindeer: nearest_reindeer,
                         distance: new_distance,
                     });
+                    if !track_paths {
+                        continue;
+                    }
                     previous.insert(nearest_reindeer, vec![current_best.reindeer]);
                 }
                 Ordering::Equal => {
+                    if !track_paths {
+                        continue;
+                    }
                     // it is possible that more than one optimal path leads to the same location,
                     // so we need to keep track of all previous Reindeer that lead to the same location
                     previous
