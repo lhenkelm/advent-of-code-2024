@@ -212,31 +212,6 @@ impl Maze {
             .map(|i| self.point_index(i))
             .unwrap()
     }
-    /// The set of all possible Reindeer reachable from the given Reindeer
-    ///
-    /// (Including direction _and_ position, as distinct Reindeer, excluding the given Reindeer)
-    /// Implemented as a kind of "flood fill", but not (just) for the set of none-wall Maze locations,
-    /// but rather the state-space of reindeer positions and directions.
-    /// A pair of Reindeer are reachable if
-    ///  - they are at the same point, but turned 90° left or right w.r.t. one another
-    ///  - they are facing to the same direction, and one Reindeer is one step ahead of the other
-    fn walk(&self, from: Reindeer) -> FxHashSet<Reindeer> {
-        debug_assert_ne!(self[from.at], Location::Wall);
-        let mut reachable = FxHashSet::default();
-        exhaust_reindeer(from, &mut reachable, self);
-        reachable
-    }
-}
-
-fn exhaust_reindeer(from: Reindeer, reachable: &mut FxHashSet<Reindeer>, maze: &Maze) {
-    for next in from.reachable() {
-        if maze[next.at] == Location::Wall {
-            continue;
-        }
-        if reachable.insert(next) {
-            exhaust_reindeer(next, reachable, maze);
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -310,17 +285,6 @@ struct Point {
     y: usize,
 }
 
-impl Point {
-    fn neighbours(&self) -> [Point; 4] {
-        [
-            *self + Direction::North.vector(),
-            *self + Direction::East.vector(),
-            *self + Direction::South.vector(),
-            *self + Direction::West.vector(),
-        ]
-    }
-}
-
 impl Add<Vector> for Point {
     type Output = Point;
 
@@ -370,10 +334,6 @@ impl Direction {
             Direction::South => Direction::West,
             Direction::West => Direction::North,
         }
-    }
-
-    fn neighbouring_directions(&self) -> [Direction; 2] {
-        [self.turn_left(), self.turn_right()]
     }
 }
 
