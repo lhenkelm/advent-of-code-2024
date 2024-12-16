@@ -87,26 +87,6 @@ fn part2(maze: &Maze) -> u64 {
             }
         }
     }
-    // print the optimal paths
-    for y in 0..maze.height {
-        for x in 0..maze.width {
-            let point = Point { x, y };
-            let c = match maze[point] {
-                Location::Wall => '#',
-                Location::Empty => '.',
-                Location::Start => 'S',
-                Location::End => 'E',
-            };
-            let c = if optimal_path_seats.contains(&point) {
-                'O'
-            } else {
-                c
-            };
-            print!("{}", c);
-        }
-        println!();
-    }
-
     optimal_path_seats.len() as u64
 }
 
