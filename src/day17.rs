@@ -31,26 +31,10 @@ fn parse(input: &str) -> (StrangeDevice, Vec<u8>) {
 
 #[aoc(day17, part1)]
 fn part1((initial_state, program): &(StrangeDevice, Vec<u8>)) -> String {
-    let mut history = vec![initial_state.clone()];
-    dbg!(program);
-    let final_state = loop {
-        let state = history.last().unwrap();
-        let instruction = Instruction::from_opcode(program[state.instruction_pointer]);
-        let operand = Operand::from_u8(
-            program[state.instruction_pointer + 1],
-            instruction.arg_type(),
-        );
-        // we are set up to deal with instructions being interpreted as operands and vice versa,
-        // but I don't think that will happen for our inputs, so I assert to check if it does
-        debug_assert!(state.instruction_pointer % 2 == 0);
-        let state = instruction.apply(operand, state);
-        // + 1 because we take the operand from the pointer's increment
-        if state.instruction_pointer + 1 > program.len() {
-            break state;
-        }
-        history.push(state);
-    };
-    final_state.output_buffer.iter().join(",")
+    eval_program(program, initial_state)
+        .output_buffer
+        .iter()
+        .join(",")
 }
 
 #[aoc(day17, part2)]
@@ -65,6 +49,26 @@ fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
         println!("{inst_str}  [with operand: {operand:?}]");
     }
     0
+}
+
+fn eval_program(program: &[u8], state: &StrangeDevice) -> StrangeDevice {
+    let mut state = state.clone();
+    dbg!(program);
+    loop {
+        let instruction = Instruction::from_opcode(program[state.instruction_pointer]);
+        let operand = Operand::from_u8(
+            program[state.instruction_pointer + 1],
+            instruction.arg_type(),
+        );
+        // we are set up to deal with instructions being interpreted as operands and vice versa,
+        // but I don't think that will happen for our inputs, so I assert to check if it does
+        debug_assert!(state.instruction_pointer % 2 == 0);
+        state = instruction.apply(operand, &state);
+        // + 1 because we take the operand from the pointer's increment
+        if state.instruction_pointer + 1 > program.len() {
+            break state;
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
