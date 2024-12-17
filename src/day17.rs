@@ -1,14 +1,11 @@
-use std::{
-    fmt::{self, Debug, Display, Formatter},
-    iter,
-};
+use std::fmt::{self, Debug, Display, Formatter};
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use itertools::Itertools;
-use rustc_hash::FxHashSet; // for Iterator::next_tuple, Iterator::tuples
+use itertools::Itertools; // for Iterator::next_tuple
 
 #[aoc_generator(day17)]
 fn parse(input: &str) -> (StrangeDevice, Vec<u8>) {
+    let input = input.replace("\r\n", "\n");
     let (register_str, program_str) = input.trim().split("\n\n").next_tuple().unwrap();
 
     // Parse the registers, trusting that the input is well-formed
@@ -41,10 +38,10 @@ fn part1((initial_state, program): &(StrangeDevice, Vec<u8>)) -> String {
         .join(",")
 }
 
+const BE_LOUD: bool = false;
+
 #[aoc(day17, part2)]
 fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
-    const BE_LOUD: bool = false;
-
     if BE_LOUD {
         println!(
             "Finding initial state of register A that makes a quine of: {}\n",
@@ -66,20 +63,7 @@ fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
         println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
     }
 
-    // find a good starting value to seed the search, by just trying all possible values
-    let min_offset = (0..8)
-        .find(|&ra| (get_output(program, ra, initial_state) % 8) as u8 == *program.last().unwrap())
-        .unwrap();
-    if BE_LOUD {
-        println!(
-            "seed value for final code: {} -> {}\n",
-            min_offset,
-            get_output(program, min_offset, initial_state)
-        );
-    }
-    let mut quines = FxHashSet::default();
-    quines.insert(min_offset);
-    // Iter through increasing reverse slices of the program to gradually build up a set of good
+    // Recurse greedily through increasing reverse slices of the program to gradually build up a set of good
     // candidate initial values. This works because the _only_ way the described instruction
     // set can produce a number greater than 7 in the output buffer is by shifting register A right
     // by a number greater than 3, outputting the result % 8, and then jumping back ahead of some similar
@@ -100,48 +84,40 @@ fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
     // (since a general program could *skip* part of the register depending on the value of some register)
     // but in practice neither the test not my input required this. For the reason outlined above,
     // this is the minimum number of "powers of 8" we need to check to find this "shortest possible" solution.
-    for num in iter::repeat(program)
-        .take(program.len())
-        .enumerate()
-        .map(|(i, p)| num_cat(&p[i..]))
-        .collect::<Vec<u64>>()
-        .into_iter()
-        .rev()
-    {
-        if BE_LOUD {
-            println!("\nLooking for {}", num);
-        }
-        // For each possible quine, we must try all possible next values, since we don't know yet
-        // which one will end up being the smallest.
-        // We produce a new set of extended quines which is filtered-at-insertion to just the
-        // quines that are not ruled out at the current power-of-8 step.
-        // (NB: this is still exponential if the the partial-check filter does not constrain the search space,
-        // but in practice it is much much faster than the naive search over all possible register values)
-        let mut new_quines = FxHashSet::default();
-        for curr in quines {
-            for i in 0..8 {
-                let new = (curr << 3) + i;
-                let result = get_output(program, new, initial_state);
-                if result == num {
-                    if BE_LOUD {
-                        println!("{} -> {}", new, result);
-                    }
-                    new_quines.insert(new);
-                }
-            }
-        }
-        if new_quines.is_empty() {
-            panic!("No quines found for {}", num);
-        }
-        quines = new_quines;
-    }
     // The minimum value of the quines at the current (minimal) power of 8
     // is the minimal quine-completing value, i.e. the solution
+    let quines = quine_recursion(program.len() - 1, 0, program, initial_state);
     let result = *quines.iter().min().unwrap();
     if BE_LOUD {
         println!("\nFound solution: {}\n\n", result);
     }
     result
+}
+
+fn quine_recursion(
+    up_to: usize,
+    register_a: u64,
+    program: &[u8],
+    initial_state: &StrangeDevice,
+) -> Vec<u64> {
+    let mut solutions = vec![];
+    for i in 0..8 {
+        let new = (register_a << 3) + i;
+        let result = get_output(program, new, initial_state);
+        if result != num_cat(&program[up_to..]) {
+            continue;
+        }
+        if BE_LOUD {
+            println!("{} -> {}", new, result);
+        }
+        if up_to == 0 {
+            solutions.push(new);
+            break;
+        }
+        let mut deep = quine_recursion(up_to - 1, new, program, initial_state);
+        solutions.append(&mut deep);
+    }
+    solutions
 }
 
 fn get_output(program: &[u8], register_a: u64, initial_state: &StrangeDevice) -> u64 {
