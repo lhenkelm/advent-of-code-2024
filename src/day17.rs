@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools; // for Iterator::next_tuple, Iterator::tuples
 
@@ -48,13 +50,21 @@ fn part1((initial_state, program): &(StrangeDevice, Vec<u8>)) -> String {
         }
         history.push(state);
     };
-    println!("Halted after {} steps", history.len());
     final_state.output_buffer.iter().join(",")
 }
 
 #[aoc(day17, part2)]
 fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
-    todo!()
+    for i in 0..program.len() {
+        if i % 2 == 1 {
+            continue;
+        }
+        let instruction = Instruction::from_opcode(program[i]);
+        let operand = Operand::from_u8(program[i + 1], instruction.arg_type());
+        let inst_str = format!("{}", instruction).replace("<operand>", &format!("{:?}", operand));
+        println!("{inst_str}  [with operand: {operand:?}]");
+    }
+    0
 }
 
 #[derive(Debug, Clone)]
@@ -124,6 +134,22 @@ impl Instruction {
             Self::Bdv => shift_right(operand, Operand::RegisterB, state),
             Self::Cdv => shift_right(operand, Operand::RegisterC, state),
         }
+    }
+}
+
+impl Display for Instruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let long_name = match self {
+            Self::Adv => "Bit-shift register A right <operand> times -> register A; (adv, 0)",
+            Self::Bxl => "Bitwise XOR register B with <operand> -> register B; (bxl, 1)",
+            Self::Bst => "Modulo 8 of <operand> -> register B; (bst, 2)",
+            Self::Jnz => "Jump to <operand> if register A is non-zero; (jnz, 3)",
+            Self::Bxc => "Bitwise XOR register B with register C -> register B; (bxc, 4)",
+            Self::Out => "Output <operand> modulo 8 to buffer; (out, 5)",
+            Self::Bdv => "Bit-shift register A  right <operand> times -> register B; (bdv, 6)",
+            Self::Cdv => "Bit-shift register A right <operand> times -> register C; (cdv, 7)",
+        };
+        write!(f, "{}", long_name)
     }
 }
 
