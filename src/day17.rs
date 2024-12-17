@@ -36,6 +36,7 @@ fn parse(input: &str) -> (StrangeDevice, Vec<(Instruction, Operand)>) {
 #[aoc(day17, part1)]
 fn part1((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)) -> String {
     let mut history = vec![initial_state.clone()];
+    dbg!(program);
     let final_state = loop {
         let state = history.last().unwrap();
         let (instruction, operand) = program[state.instruction_pointer / 2];
@@ -119,7 +120,7 @@ impl Instruction {
             Self::Bxl => bitwise_xor(operand, state),
             Self::Bst => modulo_8(operand, state),
             Self::Jnz => jump_if_nonzero(operand, state),
-            Self::Bxc => bitwise_xor(operand, state),
+            Self::Bxc => bitwise_xor(Operand::RegisterC, state),
             Self::Out => output_to_buffer(operand, state),
             Self::Bdv => shift_right(operand, Operand::RegisterB, state),
             Self::Cdv => shift_right(operand, Operand::RegisterC, state),
