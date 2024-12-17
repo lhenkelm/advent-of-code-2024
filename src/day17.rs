@@ -69,6 +69,7 @@ impl StrangeDevice {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Instruction {
     Adv,
     Bxl,
@@ -243,7 +244,7 @@ fn output_to_buffer(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Operand {
     Literal(u8),
     RegisterA,
@@ -298,6 +299,18 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(part1(&parse(EXAMPLE)), "4,6,3,5,6,3,5,2,1,0");
+    }
+
+    #[test]
+    fn part1_example_parse() {
+        let (initial_state, program) = parse(EXAMPLE);
+        assert_eq!(initial_state.register_a, 729);
+        assert_eq!(initial_state.register_b, 0);
+        assert_eq!(initial_state.register_c, 0);
+        assert_eq!(program.len(), 3);
+        assert_eq!(program[0], (Instruction::Adv, Operand::Literal(1)));
+        assert_eq!(program[1], (Instruction::Out, Operand::RegisterA));
+        assert_eq!(program[2], (Instruction::Jnz, Operand::Literal(0)));
     }
 
     #[ignore]
