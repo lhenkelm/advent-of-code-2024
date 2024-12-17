@@ -2,7 +2,7 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools; // for Iterator::next_tuple, Iterator::tuples
 
 #[aoc_generator(day17)]
-fn parse(input: &str) -> (StrangeDevice, Vec<(Instruction, Operand)>) {
+fn parse(input: &str) -> (StrangeDevice, Vec<u8>) {
     let (register_str, program_str) = input.trim().split("\n\n").next_tuple().unwrap();
 
     // Parse the registers, trusting that the input is well-formed
@@ -22,29 +22,28 @@ fn parse(input: &str) -> (StrangeDevice, Vec<(Instruction, Operand)>) {
         .1
         .split(',')
         .map(|tok| tok.parse().unwrap())
-        .tuples()
-        .map(|(opcode, operand)| {
-            let inst = Instruction::from_opcode(opcode);
-            let operand = Operand::from_u8(operand, inst.arg_type());
-            (inst, operand)
-        })
         .collect();
 
     (initial_state, program)
 }
 
 #[aoc(day17, part1)]
-fn part1((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)) -> String {
+fn part1((initial_state, program): &(StrangeDevice, Vec<u8>)) -> String {
     let mut history = vec![initial_state.clone()];
     dbg!(program);
     let final_state = loop {
         let state = history.last().unwrap();
-        let (instruction, operand) = program[state.instruction_pointer / 2];
-        // if this is tripped, would need to move parsing of program outside the generator,
-        // since the meaning of a number will depend on state.instructions_pointer % 2
+        let instruction = Instruction::from_opcode(program[state.instruction_pointer]);
+        let operand = Operand::from_u8(
+            program[state.instruction_pointer + 1],
+            instruction.arg_type(),
+        );
+        // we are set up to deal with instructions being interpreted as operands and vice versa,
+        // but I don't think that will happen for our inputs, so I assert to check if it does
         debug_assert!(state.instruction_pointer % 2 == 0);
         let state = instruction.apply(operand, state);
-        if state.instruction_pointer >= program.len() * 2 {
+        // + 1 because we take the operand from the pointer's increment
+        if state.instruction_pointer + 1 > program.len() {
             break state;
         }
         history.push(state);
@@ -54,7 +53,7 @@ fn part1((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)
 }
 
 #[aoc(day17, part2)]
-fn part2((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)) -> u64 {
+fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
     todo!()
 }
 
@@ -326,10 +325,8 @@ mod tests {
         assert_eq!(initial_state.register_b, 0);
         assert_eq!(initial_state.register_c, 0);
         assert_eq!(initial_state.output_buffer, vec![]);
-        assert_eq!(program.len(), 3);
-        assert_eq!(program[0], (Instruction::Adv, Operand::Literal(1)));
-        assert_eq!(program[1], (Instruction::Out, Operand::RegisterA));
-        assert_eq!(program[2], (Instruction::Jnz, Operand::Literal(0)));
+        assert_eq!(program.len(), 6);
+        assert_eq!(program, vec![0, 1, 5, 4, 3, 0]);
     }
 
     #[ignore]
