@@ -1,5 +1,5 @@
 use std::{
-    fmt::{self, Display, Formatter},
+    fmt::{self, Debug, Display, Formatter},
     iter,
 };
 
@@ -263,56 +263,35 @@ impl Display for Instruction {
 }
 
 fn shift_right(operand: Operand, result_target: Operand, state: &mut StrangeDevice) {
-    let operand = match operand {
-        Operand::Literal(value) => value as u64,
-        Operand::RegisterA => state.register_a,
-        Operand::RegisterB => state.register_b,
-        Operand::RegisterC => state.register_c,
-        Operand::Ignored => panic!("Invalid numerator: {:?}", operand),
-    };
-
+    let operand = operand.get_as_u64(state);
     let result = state.register_a >> operand;
 
     match result_target {
         Operand::RegisterA => {
             state.register_a = result;
-            state.instruction_pointer += 2;
         }
         Operand::RegisterB => {
             state.register_b = result;
-            state.instruction_pointer += 2;
         }
         Operand::RegisterC => {
             state.register_c = result;
-            state.instruction_pointer += 2;
         }
         Operand::Ignored | Operand::Literal(_) => {
             panic!("Invalid result_target: {:?}", result_target)
         }
     }
+    state.instruction_pointer += 2;
 }
 
 fn bitwise_xor(operand: Operand, state: &mut StrangeDevice) {
-    let operand = match operand {
-        Operand::Literal(value) => value as u64,
-        Operand::RegisterA => state.register_a,
-        Operand::RegisterB => state.register_b,
-        Operand::RegisterC => state.register_c,
-        Operand::Ignored => panic!("Invalid operand: {:?}", operand),
-    };
+    let operand = operand.get_as_u64(state);
     let result = state.register_b ^ operand;
     state.register_b = result;
     state.instruction_pointer += 2;
 }
 
 fn modulo_8(operand: Operand, state: &mut StrangeDevice) {
-    let operand = match operand {
-        Operand::Literal(value) => value as u64,
-        Operand::RegisterA => state.register_a,
-        Operand::RegisterB => state.register_b,
-        Operand::RegisterC => state.register_c,
-        Operand::Ignored => panic!("Invalid operand: {:?}", operand),
-    };
+    let operand = operand.get_as_u64(state);
     let result = operand % 8;
 
     state.register_b = result;
@@ -320,13 +299,7 @@ fn modulo_8(operand: Operand, state: &mut StrangeDevice) {
 }
 
 fn jump_if_nonzero(operand: Operand, state: &mut StrangeDevice) {
-    let operand = match operand {
-        Operand::Literal(value) => value as usize,
-        Operand::RegisterA => state.register_a as usize,
-        Operand::RegisterB => state.register_b as usize,
-        Operand::RegisterC => state.register_c as usize,
-        Operand::Ignored => panic!("Invalid operand: {:?}", operand),
-    };
+    let operand = operand.get_as_usize(state);
 
     if state.register_a != 0 {
         state.instruction_pointer = operand;
@@ -336,13 +309,7 @@ fn jump_if_nonzero(operand: Operand, state: &mut StrangeDevice) {
 }
 
 fn output_to_buffer(operand: Operand, state: &mut StrangeDevice) {
-    let operand = match operand {
-        Operand::Literal(value) => value,
-        Operand::RegisterA => state.register_a as u8,
-        Operand::RegisterB => state.register_b as u8,
-        Operand::RegisterC => state.register_c as u8,
-        Operand::Ignored => panic!("Invalid operand: {:?}", operand),
-    };
+    let operand = operand.get_as_u8(state);
 
     state.output_buffer.push(operand % 8);
     state.instruction_pointer += 2;
@@ -377,6 +344,36 @@ impl Operand {
             OperandType::Literal => Self::literal_from_u8(value),
             OperandType::Combo => Self::combo_from_u8(value),
             OperandType::Ignored => Self::Ignored,
+        }
+    }
+
+    fn get_as_u64(&self, state: &StrangeDevice) -> u64 {
+        match self {
+            Self::Literal(value) => *value as u64,
+            Self::RegisterA => state.register_a,
+            Self::RegisterB => state.register_b,
+            Self::RegisterC => state.register_c,
+            Self::Ignored => panic!("Operand::Ignored has no value"),
+        }
+    }
+
+    fn get_as_u8(&self, state: &StrangeDevice) -> u8 {
+        match self {
+            Self::Literal(value) => *value,
+            Self::RegisterA => state.register_a as u8,
+            Self::RegisterB => state.register_b as u8,
+            Self::RegisterC => state.register_c as u8,
+            Self::Ignored => panic!("Operand::Ignored has no value"),
+        }
+    }
+
+    fn get_as_usize(&self, state: &StrangeDevice) -> usize {
+        match self {
+            Self::Literal(value) => *value as usize,
+            Self::RegisterA => state.register_a as usize,
+            Self::RegisterB => state.register_b as usize,
+            Self::RegisterC => state.register_c as usize,
+            Self::Ignored => panic!("Operand::Ignored has no value"),
         }
     }
 }
