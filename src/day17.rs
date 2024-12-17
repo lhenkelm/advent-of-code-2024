@@ -104,6 +104,8 @@ fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
         .take(program.len())
         .enumerate()
         .map(|(i, p)| num_cat(&p[i..]))
+        .collect::<Vec<u64>>()
+        .into_iter()
         .rev()
     {
         if BE_LOUD {
