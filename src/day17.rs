@@ -36,11 +36,20 @@ fn parse(input: &str) -> (StrangeDevice, Vec<(Instruction, Operand)>) {
 #[aoc(day17, part1)]
 fn part1((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)) -> String {
     let mut history = vec![initial_state.clone()];
-    for (instruction, operand) in program.iter() {
-        let state = instruction.apply(*operand, &history.last().unwrap());
+    let final_state = loop {
+        let state = history.last().unwrap();
+        let (instruction, operand) = program[state.instruction_pointer / 2];
+        // if this is tripped, would need to move parsing of program outside the generator,
+        // since the meaning of a number will depend on state.instructions_pointer % 2
+        debug_assert!(state.instruction_pointer % 2 == 0);
+        let state = instruction.apply(operand, state);
+        if state.instruction_pointer >= program.len() * 2 {
+            break state;
+        }
         history.push(state);
-    }
-    history.last().unwrap().output_buffer.iter().join(",")
+    };
+    println!("Halted after {} steps", history.len());
+    final_state.output_buffer.iter().join(",")
 }
 
 #[aoc(day17, part2)]
