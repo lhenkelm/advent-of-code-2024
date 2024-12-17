@@ -1,7 +1,11 @@
-use std::fmt::{self, Display, Formatter};
+use std::{
+    fmt::{self, Display, Formatter},
+    iter,
+};
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use itertools::Itertools; // for Iterator::next_tuple, Iterator::tuples
+use itertools::Itertools;
+use rustc_hash::FxHashSet; // for Iterator::next_tuple, Iterator::tuples
 
 #[aoc_generator(day17)]
 fn parse(input: &str) -> (StrangeDevice, Vec<u8>) {
@@ -39,30 +43,114 @@ fn part1((initial_state, program): &(StrangeDevice, Vec<u8>)) -> String {
 
 #[aoc(day17, part2)]
 fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
-    for i in 0..program.len() {
-        if i % 2 == 1 {
-            continue;
+    const BE_LOUD: bool = false;
+
+    if BE_LOUD {
+        println!(
+            "Finding initial state of register A that makes a quine of: {}\n",
+            num_cat(program)
+        );
+        println!("The program decompiles to the following instructions,");
+        println!("(in the format <long description>; (<mnemonic>, <opcode>)  [with operand: <operand>]):\n");
+        println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        for i in 0..program.len() {
+            if i % 2 == 1 {
+                continue;
+            }
+            let instruction = Instruction::from_opcode(program[i]);
+            let operand = Operand::from_u8(program[i + 1], instruction.arg_type());
+            let inst_str =
+                format!("{}", instruction).replace("<operand>", &format!("{:?}", operand));
+            println!("{inst_str}  [with operand: {operand:?}]");
         }
-        let instruction = Instruction::from_opcode(program[i]);
-        let operand = Operand::from_u8(program[i + 1], instruction.arg_type());
-        let inst_str = format!("{}", instruction).replace("<operand>", &format!("{:?}", operand));
-        println!("{inst_str}  [with operand: {operand:?}]");
+        println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
     }
 
-    let search_range = 0..4 * num_cat(program);
-    for candidate in search_range.clone() {
-        let cand_state = StrangeDevice {
-            register_a: candidate,
-            register_b: initial_state.register_b,
-            register_c: initial_state.register_c,
-            instruction_pointer: initial_state.instruction_pointer,
-            output_buffer: initial_state.output_buffer.clone(),
-        };
-        if eval_program(program, &cand_state).output_buffer == *program {
-            return candidate;
-        }
+    // find a good starting value to seed the search, by just trying all possible values
+    let min_offset = (0..8)
+        .find(|&ra| (get_output(program, ra, initial_state) % 8) as u8 == *program.last().unwrap())
+        .unwrap();
+    if BE_LOUD {
+        println!(
+            "seed value for final code: {} -> {}\n",
+            min_offset,
+            get_output(program, min_offset, initial_state)
+        );
     }
-    panic!("No solution found in range {:?}", search_range);
+    let mut quines = FxHashSet::default();
+    quines.insert(min_offset);
+    // Iter through increasing reverse slices of the program to gradually build up a set of good
+    // candidate initial values. This works because the _only_ way the described instruction
+    // set can produce a number greater than 7 in the output buffer is by shifting register A right
+    // by a number greater than 3, outputting the result % 8, and then jumping back ahead of some similar
+    // shift instruction to continue the loop until A is consumed.
+    //
+    // As a result we can approach the solution in steps of powers of 8,
+    // and at each power, there are only 8 different possible inputs.
+    // We can also confirm the lowest-power part of a partial solution at each step,
+    // by comparing the output of the program with with the concatenation of the end of the program.
+    // Because both opcodes and operands are 3 bits, this end-first check can match the last-power-of-8
+    // splitting of the solution by simply reverse-iterating through the program.
+    //
+    // Because each part of the program output is "obscured" by the modulo 8 operation, but the internal
+    // state of the registers is not constrained, we need to build up a set of all possible quine(-making value)s
+    // at each step to continue the search at the next step from.
+    //
+    // In principle it could be necessary to check much longer registers than the program length,
+    // (since a general program could *skip* part of the register depending on the value of some register)
+    // but in practice neither the test not my input required this. For the reason outlined above,
+    // this is the minimum number of "powers of 8" we need to check to find this "shortest possible" solution.
+    for num in iter::repeat(program)
+        .take(program.len())
+        .enumerate()
+        .map(|(i, p)| num_cat(&p[i..]))
+        .rev()
+    {
+        if BE_LOUD {
+            println!("\nLooking for {}", num);
+        }
+        // For each possible quine, we must try all possible next values, since we don't know yet
+        // which one will end up being the smallest.
+        // We produce a new set of extended quines which is filtered-at-insertion to just the
+        // quines that are not ruled out at the current power-of-8 step.
+        // (NB: this is still exponential if the the partial-check filter does not constrain the search space,
+        // but in practice it is much much faster than the naive search over all possible register values)
+        let mut new_quines = FxHashSet::default();
+        for curr in quines {
+            for i in 0..8 {
+                let new = (curr << 3) + i;
+                let result = get_output(program, new, initial_state);
+                if result == num {
+                    if BE_LOUD {
+                        println!("{} -> {}", new, result);
+                    }
+                    new_quines.insert(new);
+                }
+            }
+        }
+        if new_quines.is_empty() {
+            panic!("No quines found for {}", num);
+        }
+        quines = new_quines;
+    }
+    // The minimum value of the quines at the current (minimal) power of 8
+    // is the minimal quine-completing value, i.e. the solution
+    let result = *quines.iter().min().unwrap();
+    if BE_LOUD {
+        println!("\nFound solution: {}\n\n", result);
+    }
+    result
+}
+
+fn get_output(program: &[u8], register_a: u64, initial_state: &StrangeDevice) -> u64 {
+    let state = StrangeDevice {
+        register_a,
+        register_b: initial_state.register_b,
+        register_c: initial_state.register_c,
+        instruction_pointer: initial_state.instruction_pointer,
+        output_buffer: initial_state.output_buffer.clone(),
+    };
+    num_cat(&eval_program(program, &state).output_buffer)
 }
 
 fn eval_program(program: &[u8], state: &StrangeDevice) -> StrangeDevice {
