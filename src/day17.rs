@@ -49,7 +49,7 @@ fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
         println!("{inst_str}  [with operand: {operand:?}]");
     }
 
-    let search_range = num_cat(program)..10 * num_cat(program);
+    let search_range = 0..4 * num_cat(program);
     for candidate in search_range.clone() {
         let cand_state = StrangeDevice {
             register_a: candidate,
