@@ -54,7 +54,7 @@ fn part1((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)
 }
 
 #[aoc(day17, part2)]
-fn part2((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)) -> String {
+fn part2((initial_state, program): &(StrangeDevice, Vec<(Instruction, Operand)>)) -> u64 {
     todo!()
 }
 
@@ -298,7 +298,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const EXAMPLE: &str = indoc! {"
+    const EXAMPLE_PT1: &str = indoc! {"
         Register A: 729
         Register B: 0
         Register C: 0
@@ -306,17 +306,26 @@ mod tests {
         Program: 0,1,5,4,3,0
     "};
 
+    const EXAMPLE_PT2: &str = indoc! {"
+        Register A: 2024
+        Register B: 0
+        Register C: 0
+
+        Program: 0,3,5,4,3,0
+    "};
+
     #[test]
     fn part1_example() {
-        assert_eq!(part1(&parse(EXAMPLE)), "4,6,3,5,6,3,5,2,1,0");
+        assert_eq!(part1(&parse(EXAMPLE_PT1)), "4,6,3,5,6,3,5,2,1,0");
     }
 
     #[test]
     fn part1_example_parse() {
-        let (initial_state, program) = parse(EXAMPLE);
+        let (initial_state, program) = parse(EXAMPLE_PT1);
         assert_eq!(initial_state.register_a, 729);
         assert_eq!(initial_state.register_b, 0);
         assert_eq!(initial_state.register_c, 0);
+        assert_eq!(initial_state.output_buffer, vec![]);
         assert_eq!(program.len(), 3);
         assert_eq!(program[0], (Instruction::Adv, Operand::Literal(1)));
         assert_eq!(program[1], (Instruction::Out, Operand::RegisterA));
@@ -325,6 +334,6 @@ mod tests {
 
     #[ignore]
     fn part2_example() {
-        assert_eq!(part2(&parse(EXAMPLE)), "<RESULT>");
+        assert_eq!(part2(&parse(EXAMPLE_PT2)), 117440);
     }
 }
