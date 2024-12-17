@@ -164,7 +164,7 @@ fn eval_program(program: &[u8], state: &StrangeDevice) -> StrangeDevice {
         // we are set up to deal with instructions being interpreted as operands and vice versa,
         // but I don't think that will happen for our inputs, so I assert to check if it does
         debug_assert!(state.instruction_pointer % 2 == 0);
-        state = instruction.apply(operand, &state);
+        instruction.apply(operand, &mut state);
         // + 1 because we take the operand from the pointer's increment
         if state.instruction_pointer + 1 > program.len() {
             break state;
@@ -232,7 +232,7 @@ impl Instruction {
         }
     }
 
-    fn apply(&self, operand: Operand, state: &StrangeDevice) -> StrangeDevice {
+    fn apply(&self, operand: Operand, state: &mut StrangeDevice) {
         match self {
             Self::Adv => shift_right(operand, Operand::RegisterA, state),
             Self::Bxl => bitwise_xor(operand, state),
@@ -262,7 +262,7 @@ impl Display for Instruction {
     }
 }
 
-fn shift_right(operand: Operand, result_target: Operand, state: &StrangeDevice) -> StrangeDevice {
+fn shift_right(operand: Operand, result_target: Operand, state: &mut StrangeDevice) {
     let operand = match operand {
         Operand::Literal(value) => value as u64,
         Operand::RegisterA => state.register_a,
@@ -274,34 +274,25 @@ fn shift_right(operand: Operand, result_target: Operand, state: &StrangeDevice) 
     let result = state.register_a >> operand;
 
     match result_target {
-        Operand::RegisterA => StrangeDevice {
-            register_a: result,
-            register_b: state.register_b,
-            register_c: state.register_c,
-            instruction_pointer: state.instruction_pointer + 2,
-            output_buffer: state.output_buffer.clone(),
-        },
-        Operand::RegisterB => StrangeDevice {
-            register_a: state.register_a,
-            register_b: result,
-            register_c: state.register_c,
-            instruction_pointer: state.instruction_pointer + 2,
-            output_buffer: state.output_buffer.clone(),
-        },
-        Operand::RegisterC => StrangeDevice {
-            register_a: state.register_a,
-            register_b: state.register_b,
-            register_c: result,
-            instruction_pointer: state.instruction_pointer + 2,
-            output_buffer: state.output_buffer.clone(),
-        },
+        Operand::RegisterA => {
+            state.register_a = result;
+            state.instruction_pointer += 2;
+        }
+        Operand::RegisterB => {
+            state.register_b = result;
+            state.instruction_pointer += 2;
+        }
+        Operand::RegisterC => {
+            state.register_c = result;
+            state.instruction_pointer += 2;
+        }
         Operand::Ignored | Operand::Literal(_) => {
             panic!("Invalid result_target: {:?}", result_target)
         }
     }
 }
 
-fn bitwise_xor(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
+fn bitwise_xor(operand: Operand, state: &mut StrangeDevice) {
     let operand = match operand {
         Operand::Literal(value) => value as u64,
         Operand::RegisterA => state.register_a,
@@ -310,17 +301,11 @@ fn bitwise_xor(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
         Operand::Ignored => panic!("Invalid operand: {:?}", operand),
     };
     let result = state.register_b ^ operand;
-
-    StrangeDevice {
-        register_a: state.register_a,
-        register_b: result,
-        register_c: state.register_c,
-        instruction_pointer: state.instruction_pointer + 2,
-        output_buffer: state.output_buffer.clone(),
-    }
+    state.register_b = result;
+    state.instruction_pointer += 2;
 }
 
-fn modulo_8(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
+fn modulo_8(operand: Operand, state: &mut StrangeDevice) {
     let operand = match operand {
         Operand::Literal(value) => value as u64,
         Operand::RegisterA => state.register_a,
@@ -330,16 +315,11 @@ fn modulo_8(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
     };
     let result = operand % 8;
 
-    StrangeDevice {
-        register_a: state.register_a,
-        register_b: result,
-        register_c: state.register_c,
-        instruction_pointer: state.instruction_pointer + 2,
-        output_buffer: state.output_buffer.clone(),
-    }
+    state.register_b = result;
+    state.instruction_pointer += 2;
 }
 
-fn jump_if_nonzero(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
+fn jump_if_nonzero(operand: Operand, state: &mut StrangeDevice) {
     let operand = match operand {
         Operand::Literal(value) => value as usize,
         Operand::RegisterA => state.register_a as usize,
@@ -349,25 +329,13 @@ fn jump_if_nonzero(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
     };
 
     if state.register_a != 0 {
-        StrangeDevice {
-            register_a: state.register_a,
-            register_b: state.register_b,
-            register_c: state.register_c,
-            instruction_pointer: operand,
-            output_buffer: state.output_buffer.clone(),
-        }
+        state.instruction_pointer = operand;
     } else {
-        StrangeDevice {
-            register_a: state.register_a,
-            register_b: state.register_b,
-            register_c: state.register_c,
-            instruction_pointer: state.instruction_pointer + 2,
-            output_buffer: state.output_buffer.clone(),
-        }
+        state.instruction_pointer += 2;
     }
 }
 
-fn output_to_buffer(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
+fn output_to_buffer(operand: Operand, state: &mut StrangeDevice) {
     let operand = match operand {
         Operand::Literal(value) => value,
         Operand::RegisterA => state.register_a as u8,
@@ -376,16 +344,8 @@ fn output_to_buffer(operand: Operand, state: &StrangeDevice) -> StrangeDevice {
         Operand::Ignored => panic!("Invalid operand: {:?}", operand),
     };
 
-    let mut output_buffer = state.output_buffer.clone();
-    output_buffer.push(operand % 8);
-
-    StrangeDevice {
-        register_a: state.register_a,
-        register_b: state.register_b,
-        register_c: state.register_c,
-        instruction_pointer: state.instruction_pointer + 2,
-        output_buffer,
-    }
+    state.output_buffer.push(operand % 8);
+    state.instruction_pointer += 2;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
