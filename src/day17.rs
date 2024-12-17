@@ -48,12 +48,25 @@ fn part2((initial_state, program): &(StrangeDevice, Vec<u8>)) -> u64 {
         let inst_str = format!("{}", instruction).replace("<operand>", &format!("{:?}", operand));
         println!("{inst_str}  [with operand: {operand:?}]");
     }
-    0
+
+    let search_range = num_cat(program)..10 * num_cat(program);
+    for candidate in search_range.clone() {
+        let cand_state = StrangeDevice {
+            register_a: candidate,
+            register_b: initial_state.register_b,
+            register_c: initial_state.register_c,
+            instruction_pointer: initial_state.instruction_pointer,
+            output_buffer: initial_state.output_buffer.clone(),
+        };
+        if eval_program(program, &cand_state).output_buffer == *program {
+            return candidate;
+        }
+    }
+    panic!("No solution found in range {:?}", search_range);
 }
 
 fn eval_program(program: &[u8], state: &StrangeDevice) -> StrangeDevice {
     let mut state = state.clone();
-    dbg!(program);
     loop {
         let instruction = Instruction::from_opcode(program[state.instruction_pointer]);
         let operand = Operand::from_u8(
@@ -69,6 +82,10 @@ fn eval_program(program: &[u8], state: &StrangeDevice) -> StrangeDevice {
             break state;
         }
     }
+}
+
+fn num_cat(parts: &[u8]) -> u64 {
+    parts.iter().fold(0, |acc, &part| acc * 10 + part as u64)
 }
 
 #[derive(Debug, Clone)]
@@ -359,7 +376,7 @@ mod tests {
         assert_eq!(program, vec![0, 1, 5, 4, 3, 0]);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
         assert_eq!(part2(&parse(EXAMPLE_PT2)), 117440);
     }
