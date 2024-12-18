@@ -1,9 +1,10 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::{
     cmp::Ordering,
     collections::BinaryHeap,
+    fmt::Display,
     ops::{Add, Index, IndexMut},
 }; // next_tuple
 
@@ -56,7 +57,7 @@ fn part1(input: &[Point]) -> u64 {
 }
 
 #[aoc(day18, part2)]
-fn part2(input: &[Point]) -> String {
+fn part2(input: &[Point]) -> Point {
     todo!()
 }
 
@@ -194,6 +195,12 @@ impl Add<Vector> for Point {
     }
 }
 
+impl Display for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{x:{}, y:{}}})", self.x, self.y)
+    }
+}
+
 impl Point {
     fn checked_add(&self, Vector { dx, dy }: Vector) -> Option<Self> {
         let x = self.x as isize + dx;
@@ -281,8 +288,8 @@ mod tests {
         assert_eq!(part1(&parse(EXAMPLE)), 22);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse(EXAMPLE)), "<RESULT>");
+        assert_eq!(part2(&parse(EXAMPLE)), Point { x: 6, y: 1 });
     }
 }
