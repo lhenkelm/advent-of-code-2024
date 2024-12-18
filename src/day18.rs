@@ -58,12 +58,108 @@ fn part1(input: &[Point]) -> u64 {
 
 #[aoc(day18, part2)]
 fn part2(input: &[Point]) -> Point {
-    todo!()
+    const LOUD: bool = false;
+    let (width, height) = if input
+        .iter()
+        .flat_map(|&Point { x, y }| [x, y])
+        .max()
+        .unwrap()
+        > 6
+    {
+        (71, 71)
+    } else {
+        (7, 7)
+    };
+
+    if LOUD {
+        println!(
+            "Have {} bytes falling into memory of dims.: width: {}, height: {}",
+            input.len(),
+            width,
+            height
+        );
+    }
+
+    let mut memory = Memory {
+        data: vec![State::Safe; width * height],
+        width,
+        height,
+    };
+    let end = Point {
+        x: width - 1,
+        y: height - 1,
+    };
+
+    let mut visited = FxHashSet::default();
+    for i in 0..width {
+        visited.insert(Point { x: i, y: i });
+    }
+    for point in input {
+        if LOUD {
+            println!("Filling {}", point);
+        }
+        memory[*point] = State::Corrupted;
+        if !visited.contains(point)
+            || memory
+                .data
+                .iter()
+                .filter(|&s| *s == State::Corrupted)
+                .count()
+                < width - 1
+        {
+            continue;
+        }
+        visited = shortest_path_visited(&memory, end);
+        if LOUD {
+            println!("Visited: {}", visited.len());
+        }
+        if !visited.contains(&end) {
+            return *point;
+        }
+    }
+    panic!("End is never unreachable");
 }
 
 fn shortest_path_distances(memory: &Memory, end: Point) -> FxHashMap<Point, u64> {
     let mut queue = BinaryHeap::new();
     let mut distances = FxHashMap::default();
+    let start = Point { x: 0, y: 0 };
+    let mut min_end = u64::MAX;
+
+    distances.insert(start, 0);
+    queue.push(QueueItem {
+        point: start,
+        distance: 0,
+    });
+
+    while let Some(current_best) = queue.pop() {
+        if current_best.point == end && current_best.distance < min_end {
+            min_end = current_best.distance;
+        }
+        if current_best.distance > min_end {
+            continue;
+        }
+        for neighbour in current_best.point.reachable() {
+            if memory.get(neighbour).is_none_or(|s| s == State::Corrupted) {
+                continue;
+            }
+            let new_distance = current_best.distance + 1;
+            if new_distance < *distances.get(&neighbour).unwrap_or(&u64::MAX) {
+                distances.insert(neighbour, new_distance);
+                queue.push(QueueItem {
+                    point: neighbour,
+                    distance: new_distance,
+                });
+            }
+        }
+    }
+    distances
+}
+
+fn shortest_path_visited(memory: &Memory, end: Point) -> FxHashSet<Point> {
+    let mut queue = BinaryHeap::new();
+    let mut distances = FxHashMap::default();
+    let mut visited = FxHashSet::default();
     let start = Point { x: 0, y: 0 };
     let mut min_end = u64::MAX;
 
@@ -93,13 +189,13 @@ fn shortest_path_distances(memory: &Memory, end: Point) -> FxHashMap<Point, u64>
                         point: neighbour,
                         distance: new_distance,
                     });
+                    visited.insert(neighbour);
                 }
             }
         }
     }
-    distances
+    visited
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct QueueItem {
     point: Point,
@@ -151,14 +247,6 @@ impl Memory {
         y * self.width + x
     }
 
-    fn point_index(&self, index: usize) -> Point {
-        debug_assert!(index < self.data.len());
-        Point {
-            x: index % self.width,
-            y: index / self.width,
-        }
-    }
-
     fn get(&self, point: Point) -> Option<State> {
         if point.x >= self.width || point.y >= self.height {
             None
@@ -197,7 +285,7 @@ impl Add<Vector> for Point {
 
 impl Display for Point {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{x:{}, y:{}}})", self.x, self.y)
+        write!(f, "{},{}", self.x, self.y)
     }
 }
 
