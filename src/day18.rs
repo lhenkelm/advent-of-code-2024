@@ -49,7 +49,6 @@ fn part1(input: &[Point]) -> u64 {
 
 #[aoc(day18, part2)]
 fn part2(input: &[Point]) -> Point {
-    const LOUD: bool = false;
     let (width, height) = if input
         .iter()
         .flat_map(|&Point { x, y }| [x, y])
@@ -62,42 +61,25 @@ fn part2(input: &[Point]) -> Point {
         (7, 7)
     };
 
-    if LOUD {
-        println!(
-            "Have {} bytes falling into memory of dims.: width: {}, height: {}",
-            input.len(),
-            width,
-            height
-        );
-    }
-
-    let mut memory = Memory::new(width, height).with_corrupted(&input[..width]);
     let end = Point {
         x: width - 1,
         y: height - 1,
     };
-
-    let mut visited = FxHashSet::default();
-    for i in 0..width {
-        visited.insert(Point { x: i, y: i });
-    }
-    for point in input {
-        if LOUD {
-            println!("Filling {}", point);
+    let mut before = 0;
+    let mut after = input.len() - 1;
+    loop {
+        let at = (before + after) / 2;
+        let memory = Memory::new(width, height).with_corrupted(&input[..at]);
+        let visited = shortest_path_visited(&memory, end);
+        if visited.contains(&end) {
+            before = at;
+        } else {
+            after = at;
         }
-        memory[*point] = State::Corrupted;
-        if !visited.contains(point) {
-            continue;
-        }
-        visited = shortest_path_visited(&memory, end);
-        if LOUD {
-            println!("Visited: {}", visited.len());
-        }
-        if !visited.contains(&end) {
-            return *point;
+        if before + 1 == after {
+            return input[before];
         }
     }
-    panic!("End is never unreachable");
 }
 
 fn shortest_path_distances(memory: &Memory, end: Point) -> FxHashMap<Point, u64> {
