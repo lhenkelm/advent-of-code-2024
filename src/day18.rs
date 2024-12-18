@@ -37,16 +37,7 @@ fn part1(input: &[Point]) -> u64 {
     } else {
         (7, 7, 12)
     };
-
-    let mut memory = Memory {
-        data: vec![State::Safe; width * height],
-        width,
-        height,
-    };
-    for &point in &input[..n_fallen] {
-        memory[point] = State::Corrupted;
-    }
-    let memory = memory;
+    let memory = Memory::new(width, height).with_corrupted(&input[..n_fallen]);
 
     let end = Point {
         x: width - 1,
@@ -80,11 +71,7 @@ fn part2(input: &[Point]) -> Point {
         );
     }
 
-    let mut memory = Memory {
-        data: vec![State::Safe; width * height],
-        width,
-        height,
-    };
+    let mut memory = Memory::new(width, height).with_corrupted(&input[..width]);
     let end = Point {
         x: width - 1,
         y: height - 1,
@@ -99,14 +86,7 @@ fn part2(input: &[Point]) -> Point {
             println!("Filling {}", point);
         }
         memory[*point] = State::Corrupted;
-        if !visited.contains(point)
-            || memory
-                .data
-                .iter()
-                .filter(|&s| *s == State::Corrupted)
-                .count()
-                < width - 1
-        {
+        if !visited.contains(point) {
             continue;
         }
         visited = shortest_path_visited(&memory, end);
@@ -253,6 +233,21 @@ impl Memory {
         } else {
             Some(self[point])
         }
+    }
+
+    fn new(width: usize, height: usize) -> Self {
+        Self {
+            data: vec![State::Safe; width * height],
+            width,
+            height,
+        }
+    }
+
+    fn with_corrupted(mut self, corrupted: &[Point]) -> Self {
+        for &point in corrupted {
+            self[point] = State::Corrupted;
+        }
+        self
     }
 }
 
