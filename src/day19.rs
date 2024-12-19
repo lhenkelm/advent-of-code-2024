@@ -2,6 +2,8 @@ use aoc_runner_derive::{aoc, aoc_generator};
 // next_tuple
 use itertools::Itertools;
 use regex::{Regex, RegexSet};
+use rustc_hash::FxHashMap;
+
 #[aoc_generator(day19)]
 fn parse(input: &str) -> (Vec<String>, Vec<String>) {
     let input = input.trim().replace("\r\n", "\n");
@@ -29,18 +31,27 @@ fn part2((towel_patterns, towel_designs): &(Vec<String>, Vec<String>)) -> u64 {
     let re_partial = RegexSet::new(towel_patterns_for_re).unwrap();
     let patterns = towel_patterns.join("|");
     let re_full = Regex::new(&format!("^({})+$", patterns)).unwrap();
+    let mut cache = FxHashMap::default();
     towel_designs
         .iter()
         .filter(|design| re_full.is_match(design))
-        .map(|design| count_ways_to_match(&re_partial, towel_patterns, design))
+        .map(|design| count_ways_to_match(&re_partial, towel_patterns, design, &mut cache))
         .sum()
 }
 
-fn count_ways_to_match(regexes: &RegexSet, towel_patterns: &[String], design: &str) -> u64 {
+fn count_ways_to_match<'a>(
+    regexes: &RegexSet,
+    towel_patterns: &[String],
+    design: &'a str,
+    cache: &mut FxHashMap<&'a str, u64>,
+) -> u64 {
     if design.is_empty() {
         return 1;
     }
-    regexes
+    if let Some(&count) = cache.get(design) {
+        return count;
+    }
+    let result = regexes
         .matches(design)
         .into_iter()
         .map(|idx| {
@@ -48,9 +59,12 @@ fn count_ways_to_match(regexes: &RegexSet, towel_patterns: &[String], design: &s
                 regexes,
                 towel_patterns,
                 &design[towel_patterns[idx].len()..],
+                cache,
             )
         })
-        .sum()
+        .sum();
+    cache.insert(design, result);
+    result
 }
 #[cfg(test)]
 mod tests {
