@@ -1,6 +1,7 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+// next_tuple
 use itertools::Itertools;
-use regex::Regex; // next_tuple
+use regex::{Regex, RegexSet};
 #[aoc_generator(day19)]
 fn parse(input: &str) -> (Vec<String>, Vec<String>) {
     let input = input.trim().replace("\r\n", "\n");
@@ -22,10 +23,35 @@ fn part1((towel_patterns, towel_designs): &(Vec<String>, Vec<String>)) -> u64 {
 }
 
 #[aoc(day19, part2)]
-fn part2((towel_patterns, towel_designs): &(Vec<String>, Vec<String>)) -> String {
-    todo!()
+fn part2((towel_patterns, towel_designs): &(Vec<String>, Vec<String>)) -> u64 {
+    let towel_patterns_for_re: Vec<String> =
+        towel_patterns.iter().map(|s| format!("^{}", s)).collect();
+    let re_partial = RegexSet::new(towel_patterns_for_re).unwrap();
+    let patterns = towel_patterns.join("|");
+    let re_full = Regex::new(&format!("^({})+$", patterns)).unwrap();
+    towel_designs
+        .iter()
+        .filter(|design| re_full.is_match(design))
+        .map(|design| count_ways_to_match(&re_partial, towel_patterns, design))
+        .sum()
 }
 
+fn count_ways_to_match(regexes: &RegexSet, towel_patterns: &[String], design: &str) -> u64 {
+    if design.is_empty() {
+        return 1;
+    }
+    regexes
+        .matches(design)
+        .into_iter()
+        .map(|idx| {
+            count_ways_to_match(
+                regexes,
+                towel_patterns,
+                &design[towel_patterns[idx].len()..],
+            )
+        })
+        .sum()
+}
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
