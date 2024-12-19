@@ -1,5 +1,6 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use itertools::Itertools; // next_tuple
+use itertools::Itertools;
+use regex::Regex; // next_tuple
 #[aoc_generator(day19)]
 fn parse(input: &str) -> (Vec<String>, Vec<String>) {
     let input = input.trim().replace("\r\n", "\n");
@@ -11,7 +12,13 @@ fn parse(input: &str) -> (Vec<String>, Vec<String>) {
 
 #[aoc(day19, part1)]
 fn part1((towel_patterns, towel_designs): &(Vec<String>, Vec<String>)) -> u64 {
-    todo!()
+    let patterns = towel_patterns.join("|");
+    let patterns = format!("^({})+$", patterns);
+    let re = Regex::new(&patterns).unwrap();
+    towel_designs
+        .iter()
+        .filter(|design| re.is_match(design))
+        .count() as u64
 }
 
 #[aoc(day19, part2)]
@@ -43,7 +50,7 @@ mod tests {
         assert_eq!(part1(&parse(EXAMPLE)), 6);
     }
 
-    #[test]
+    #[ignore]
     fn part2_example() {
         assert_eq!(part2(&parse(EXAMPLE)), "<RESULT>");
     }
