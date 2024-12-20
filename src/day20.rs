@@ -49,15 +49,19 @@ fn parse(input: &str) -> RaceTrack {
 #[aoc(day20, part1)]
 fn part1(race_track: &RaceTrack) -> u64 {
     let min_gain = match race_track.width {
-        15 => 0, // example
-        _ => 99, // real input
+        15 => 1,  // example
+        _ => 100, // real input
     };
     count_cheats(race_track, 2, min_gain)
 }
 
 #[aoc(day20, part2)]
 fn part2(race_track: &RaceTrack) -> u64 {
-    todo!()
+    let min_gain = match race_track.width {
+        15 => 50, // example
+        _ => 100, // real input
+    };
+    count_cheats(race_track, 20, min_gain)
 }
 
 fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) -> u64 {
@@ -75,16 +79,9 @@ fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) 
                 continue;
             }
             let gain = d1.abs_diff(d2) as isize - distance as isize;
-            if gain > min_gain {
+            if gain >= min_gain {
                 let (p1, p2) = if d1 < d2 { (p1, p2) } else { (p2, p1) };
-                let cheat_starts = p1
-                    .neighbours()
-                    .into_iter()
-                    .filter(|&p| race_track.get(p) == Some(Location::Wall))
-                    .filter(|&p| p.manhattan_distance(&p2) == distance - 1);
-                for c1 in cheat_starts {
-                    cheats.insert((c1, p2), gain);
-                }
+                cheats.insert((p1, p2), gain);
             }
         }
     }
@@ -268,11 +265,11 @@ mod tests {
         assert_eq!(part1(&parse(EXAMPLE)), 44);
     }
 
-    #[ignore]
+    #[test]
     fn part2_example() {
         assert_eq!(
             part2(&parse(EXAMPLE)),
-            32 + 31 + 29 + 39 + 25 + 23 + 20 + 19 + 12 + 22 + 4 + 3
+            32 + 31 + 29 + 39 + 25 + 23 + 20 + 19 + 12 + 14 + 12 + 22 + 4 + 3
         );
     }
 }
