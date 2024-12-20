@@ -65,10 +65,8 @@ fn part2(race_track: &RaceTrack) -> u64 {
 fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) -> u64 {
     let mut num_cheats = 0;
     let distances = distances_from_start(race_track);
-    let end_distance = distances[&race_track.end];
-    let relevant = |&(_, &d): &(&Point, &usize)| d <= end_distance;
-    for (&p1, &d1) in distances.iter().filter(relevant) {
-        for (&p2, &d2) in distances.iter().filter(relevant) {
+    for (&p1, &d1) in distances.iter() {
+        for (&p2, &d2) in distances.iter() {
             // since cheat paths are uniquely identified by the start, end point pair,
             // this check ensures we only consider each pair once
             if race_track.flat_index(p1) >= race_track.flat_index(p2) {
