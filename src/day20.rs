@@ -67,7 +67,19 @@ fn part1(race_track: &RaceTrack) -> u64 {
             }
             let gain = distances[&p1].abs_diff(distances[&p2]) as isize - distance as isize;
             if gain > min_gain {
-                cheats.insert((p1, p2), gain);
+                let (p1, p2) = if distances[&p1] < distances[&p2] {
+                    (p1, p2)
+                } else {
+                    (p2, p1)
+                };
+                let cheat_starts = p1
+                    .neighbours()
+                    .into_iter()
+                    .filter(|&p| race_track.get(p) == Some(Location::Wall))
+                    .filter(|&p| p.manhattan_distance(&p2) == distance - 1);
+                for c1 in cheat_starts {
+                    cheats.insert((c1, p2), gain);
+                }
             }
         }
     }
