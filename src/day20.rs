@@ -83,7 +83,7 @@ fn part1(race_track: &RaceTrack) -> u64 {
 }
 
 #[aoc(day20, part2)]
-fn part2(race_track: &RaceTrack) -> String {
+fn part2(race_track: &RaceTrack) -> u64 {
     todo!()
 }
 
@@ -266,6 +266,9 @@ mod tests {
 
     #[ignore]
     fn part2_example() {
-        assert_eq!(part2(&parse("<EXAMPLE>")), "<RESULT>");
+        assert_eq!(
+            part2(&parse(EXAMPLE)),
+            32 + 31 + 29 + 39 + 25 + 23 + 20 + 19 + 12 + 22 + 4 + 3
+        );
     }
 }
