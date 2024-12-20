@@ -63,26 +63,18 @@ fn part2(race_track: &RaceTrack) -> u64 {
 }
 
 fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) -> u64 {
-    let mut num_cheats = 0;
     let distances = distances_from_start(race_track);
-    for (&p1, &d1) in distances.iter() {
-        for (&p2, &d2) in distances.iter() {
-            // since cheat paths are uniquely identified by the start, end point pair,
-            // this check ensures we only consider each pair once
-            if race_track.flat_index(p1) >= race_track.flat_index(p2) {
-                continue;
-            }
+    distances
+        .iter()
+        .flat_map(|pd1| distances.iter().map(move |pd2| (pd1, pd2)))
+        // ensure that we count each pair only once (and skip the pair with the same point)
+        .filter(|((&p1, _), (&p2, _))| race_track.flat_index(p1) > race_track.flat_index(p2))
+        .filter(|((&p1, &d1), (&p2, &d2))| {
             let distance = p1.manhattan_distance(&p2);
-            if distance < 2 || distance > cheat_duration {
-                continue;
-            }
-            let gain = d1.abs_diff(d2) as isize - distance as isize;
-            if gain >= min_gain {
-                num_cheats += 1;
-            }
-        }
-    }
-    num_cheats
+            let gain: isize = d1.abs_diff(d2) as isize - distance as isize;
+            distance > 1 && distance <= cheat_duration && gain >= min_gain
+        })
+        .count() as u64
 }
 
 /// Traverses an assumed-to-be linear path from start to end, returning the distances of each point
