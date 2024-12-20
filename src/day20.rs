@@ -63,12 +63,14 @@ fn part2(race_track: &RaceTrack) -> u64 {
 }
 
 fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) -> u64 {
+    let mut num_cheats = 0;
     let distances = distances_from_start(race_track);
     let end_distance = distances[&race_track.end];
-    let mut cheats = FxHashMap::default();
     let relevant = |&(_, &d): &(&Point, &usize)| d <= end_distance;
     for (&p1, &d1) in distances.iter().filter(relevant) {
         for (&p2, &d2) in distances.iter().filter(relevant) {
+            // since cheat paths are uniquely identified by the start, end point pair,
+            // this check ensures we only consider each pair once
             if race_track.flat_index(p1) >= race_track.flat_index(p2) {
                 continue;
             }
@@ -78,12 +80,11 @@ fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) 
             }
             let gain = d1.abs_diff(d2) as isize - distance as isize;
             if gain >= min_gain {
-                let (p1, p2) = if d1 < d2 { (p1, p2) } else { (p2, p1) };
-                cheats.insert((p1, p2), gain);
+                num_cheats += 1;
             }
         }
     }
-    cheats.len() as u64
+    num_cheats
 }
 
 /// Traverses an assumed-to-be linear path from start to end, returning the distances of each point
