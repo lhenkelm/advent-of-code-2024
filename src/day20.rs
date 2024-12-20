@@ -67,16 +67,7 @@ fn part1(race_track: &RaceTrack) -> u64 {
             }
             let gain = distances[&p1].abs_diff(distances[&p2]) as isize - distance as isize;
             if gain > min_gain {
-                let cheat_1 = Point {
-                    x: (p1.x + p2.x) / 2,
-                    y: (p1.y + p2.y) / 2,
-                };
-                let cheat_2 = match d1.cmp(&d2) {
-                    Ordering::Less => p2,
-                    Ordering::Greater => p2,
-                    Ordering::Equal => unreachable!(),
-                };
-                cheats.insert((cheat_1, cheat_2), gain);
+                cheats.insert((p1, p2), gain);
             }
         }
     }
