@@ -1,5 +1,3 @@
-use std::collections::BinaryHeap;
-
 use aoc_runner_derive::{aoc, aoc_generator};
 use rustc_hash::FxHashMap;
 
@@ -88,32 +86,26 @@ fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) 
     cheats.len() as u64
 }
 
+/// Traverses an assumed-to-be linear path from start to end, returning the distances of each point
+///
+/// The path is assumed to be linear, with only one possible path from start to end.
+/// This is given for all inputs I have seen, (and stated in the problem description).
+/// It allows us to do a super simple traversal without keeping track of an open set or closed set,
+/// or allow for backtracking. (IoW no need for Dijkstra or BFS or DFS more generally)
 fn distances_from_start(race_track: &RaceTrack) -> FxHashMap<Point, usize> {
     let mut distances = FxHashMap::default();
-    let at = race_track.start;
-    let distance = 0;
+    let mut at = race_track.start;
+    let mut prev = race_track.start;
+    let mut distance = 0;
     distances.insert(at, distance);
-    let mut frontier = BinaryHeap::new();
-    frontier.push(QueueItem {
-        point: at,
-        distance,
-    });
-    while let Some(QueueItem {
-        point: at,
-        distance,
-    }) = frontier.pop()
-    {
+    while at != race_track.end {
         for neighbour in at.neighbours() {
-            if race_track.get(neighbour) == Some(Location::Empty) {
-                let cand_dist = distance + 1;
-                if *distances.get(&neighbour).unwrap_or(&usize::MAX) <= cand_dist {
-                    continue;
-                }
-                distances.insert(neighbour, cand_dist);
-                frontier.push(QueueItem {
-                    point: neighbour,
-                    distance: cand_dist,
-                });
+            if neighbour != prev && race_track.get(neighbour) == Some(Location::Empty) {
+                distance = distance + 1;
+                distances.insert(neighbour, distance);
+                prev = at;
+                at = neighbour;
+                break;
             }
         }
     }
@@ -138,24 +130,6 @@ impl RaceTrack {
 
     fn flat_index(&self, Point { x, y }: Point) -> usize {
         y * self.width + x
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct QueueItem {
-    point: Point,
-    distance: usize,
-}
-
-impl Ord for QueueItem {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.distance.cmp(&self.distance)
-    }
-}
-
-impl PartialOrd for QueueItem {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
     }
 }
 
