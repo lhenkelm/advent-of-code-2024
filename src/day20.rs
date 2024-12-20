@@ -52,6 +52,15 @@ fn part1(race_track: &RaceTrack) -> u64 {
         15 => 0, // example
         _ => 99, // real input
     };
+    count_cheats(race_track, 2, min_gain)
+}
+
+#[aoc(day20, part2)]
+fn part2(race_track: &RaceTrack) -> u64 {
+    todo!()
+}
+
+fn count_cheats(race_track: &RaceTrack, cheat_duration: usize, min_gain: isize) -> u64 {
     let distances = distances_from_start(race_track);
     let end_distance = distances[&race_track.end];
     let mut cheats = FxHashMap::default();
@@ -62,7 +71,7 @@ fn part1(race_track: &RaceTrack) -> u64 {
                 continue;
             }
             let distance = p1.manhattan_distance(&p2);
-            if distance != 2 {
+            if distance < 2 || distance > cheat_duration {
                 continue;
             }
             let gain = d1.abs_diff(d2) as isize - distance as isize;
@@ -80,11 +89,6 @@ fn part1(race_track: &RaceTrack) -> u64 {
         }
     }
     cheats.len() as u64
-}
-
-#[aoc(day20, part2)]
-fn part2(race_track: &RaceTrack) -> u64 {
-    todo!()
 }
 
 fn distances_from_start(race_track: &RaceTrack) -> FxHashMap<Point, usize> {
