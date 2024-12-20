@@ -49,8 +49,8 @@ fn parse(input: &str) -> RaceTrack {
 #[aoc(day20, part1)]
 fn part1(race_track: &RaceTrack) -> u64 {
     let min_gain = match race_track.width {
-        15 => 0,  // example
-        _ => 100, // real input
+        15 => 0, // example
+        _ => 99, // real input
     };
     let distances = distances_from_start(race_track);
     let end_distance = distances[&race_track.end];
