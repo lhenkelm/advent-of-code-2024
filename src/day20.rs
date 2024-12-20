@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::BinaryHeap};
+use std::collections::BinaryHeap;
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use rustc_hash::FxHashMap;
@@ -65,13 +65,9 @@ fn part1(race_track: &RaceTrack) -> u64 {
             if distance != 2 {
                 continue;
             }
-            let gain = distances[&p1].abs_diff(distances[&p2]) as isize - distance as isize;
+            let gain = d1.abs_diff(d2) as isize - distance as isize;
             if gain > min_gain {
-                let (p1, p2) = if distances[&p1] < distances[&p2] {
-                    (p1, p2)
-                } else {
-                    (p2, p1)
-                };
+                let (p1, p2) = if d1 < d2 { (p1, p2) } else { (p2, p1) };
                 let cheat_starts = p1
                     .neighbours()
                     .into_iter()
