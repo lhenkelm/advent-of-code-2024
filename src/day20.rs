@@ -62,49 +62,21 @@ fn part1(race_track: &RaceTrack) -> u64 {
                 continue;
             }
             let distance = p1.manhattan_distance(&p2);
-            if distance > 3 || distance < 2 {
+            if distance != 2 {
                 continue;
             }
             let gain = distances[&p1].abs_diff(distances[&p2]) as isize - distance as isize;
             if gain > min_gain {
-                match distance {
-                    2 => {
-                        let cheat_1 = Point {
-                            x: (p1.x + p2.x) / 2,
-                            y: (p1.y + p2.y) / 2,
-                        };
-                        let cheat_2 = match d1.cmp(&d2) {
-                            Ordering::Less => p2,
-                            Ordering::Greater => p2,
-                            Ordering::Equal => unreachable!(),
-                        };
-                        cheats.insert((cheat_1, cheat_2), gain);
-                    }
-                    3 => {
-                        let c1_cands = p1
-                            .neighbours()
-                            .into_iter()
-                            .filter(|n| n.manhattan_distance(&p2) == 2);
-                        let c2_cands: Vec<Point> = p2
-                            .neighbours()
-                            .into_iter()
-                            .filter(|n| n.manhattan_distance(&p1) == 2)
-                            .collect();
-                        for c1 in c1_cands {
-                            for &c2 in c2_cands.iter() {
-                                if c1.manhattan_distance(&c2) == 1 {
-                                    let (cheat_1, cheat_2) = match d1.cmp(&d2) {
-                                        Ordering::Less => (c1, c2),
-                                        Ordering::Greater => (c2, c1),
-                                        Ordering::Equal => unreachable!(),
-                                    };
-                                    cheats.insert((cheat_1, cheat_2), gain);
-                                }
-                            }
-                        }
-                    }
-                    _ => unreachable!(),
-                }
+                let cheat_1 = Point {
+                    x: (p1.x + p2.x) / 2,
+                    y: (p1.y + p2.y) / 2,
+                };
+                let cheat_2 = match d1.cmp(&d2) {
+                    Ordering::Less => p2,
+                    Ordering::Greater => p2,
+                    Ordering::Equal => unreachable!(),
+                };
+                cheats.insert((cheat_1, cheat_2), gain);
             }
         }
     }
@@ -166,20 +138,6 @@ impl RaceTrack {
 
     fn flat_index(&self, Point { x, y }: Point) -> usize {
         y * self.width + x
-    }
-
-    fn point(&self, index: usize) -> Point {
-        Point {
-            x: index % self.width,
-            y: index / self.width,
-        }
-    }
-
-    fn enumerate(&self) -> impl Iterator<Item = (Point, Location)> + '_ {
-        self.data.iter().copied().enumerate().map(move |(i, loc)| {
-            let pt = self.point(i);
-            (pt, loc)
-        })
     }
 }
 
