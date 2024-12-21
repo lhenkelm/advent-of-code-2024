@@ -19,15 +19,16 @@ fn parse(input: &str) -> [([char; 4], u64); 5] {
 
 #[aoc(day21, part1)]
 fn part1(codes: &[([char; 4], u64); 5]) -> u64 {
+    const N_DIR_PAD_ROBOTS: usize = 2;
     let mut path_len_cache = FxHashMap::default();
     let mut total_complexity = 0;
     for (code_seq, code_val) in codes {
-        let mut pad_state = PadState::new();
+        let mut pad_state = PadState::new(N_DIR_PAD_ROBOTS);
         let mut code_len = 0;
         for &code in code_seq {
-            let target_state = PadState::from_char(code);
+            let target_state = PadState::from_char(code, N_DIR_PAD_ROBOTS);
             let len =
-                len_shortest_path_between_states(pad_state, target_state, &mut path_len_cache);
+                len_shortest_path_between_states(pad_state, &target_state, &mut path_len_cache);
             code_len += len;
             pad_state = target_state;
         }
@@ -43,21 +44,21 @@ fn part2(input: &[([char; 4], u64); 5]) -> String {
 
 fn len_shortest_path_between_states(
     from: PadState,
-    to: PadState,
+    to: &PadState,
     cache: &mut FxHashMap<(PadState, PadState), u64>,
 ) -> u64 {
     let mut queue = VecDeque::new();
-    queue.push_back((from, 0));
-    for (state, len) in cache.iter() {
-        if state.0 == from {
-            queue.push_back((state.1, *len));
+    queue.push_back((from.clone(), 0));
+    for (states, len) in cache.iter() {
+        if states.0 == from {
+            queue.push_back((states.1.clone(), *len));
         }
     }
     while let Some((state, len)) = queue.pop_front() {
-        if state == to {
+        if state == *to {
             return len;
         }
-        cache.insert((from, state), len);
+        cache.insert((from.clone(), state.clone()), len);
         for direction in [
             DirPad::Up,
             DirPad::Down,
@@ -65,8 +66,8 @@ fn len_shortest_path_between_states(
             DirPad::Right,
             DirPad::A,
         ] {
-            if let Some(next_state) = state.press(direction) {
-                if cache.contains_key(&(from, next_state)) {
+            if let Some(next_state) = state.clone().press(direction) {
+                if cache.contains_key(&(from.clone(), next_state.clone())) {
                     continue;
                 }
                 queue.push_back((next_state, len + 1));
@@ -75,42 +76,42 @@ fn len_shortest_path_between_states(
     }
     panic!("No path found");
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct PadState {
     num: NumPad,
-    dir0: DirPad,
-    dir1: DirPad,
+    dir: Vec<DirPad>,
 }
 
 impl PadState {
-    fn new() -> Self {
+    fn new(n_dir_pads: usize) -> Self {
         Self {
             num: NumPad::A(false),
-            dir0: DirPad::A,
-            dir1: DirPad::A,
+            dir: vec![DirPad::A; n_dir_pads],
         }
     }
 
-    fn from_char(ch: char) -> Self {
+    fn from_char(ch: char, n_dir_pads: usize) -> Self {
         PadState {
             num: NumPad::from_char(ch),
-            dir0: DirPad::A,
-            dir1: DirPad::A,
+            dir: vec![DirPad::A; n_dir_pads],
         }
     }
 
     fn press(self, direction: DirPad) -> Option<PadState> {
         let mut state = self;
-        state.dir1 = state.dir1.move_(direction)?;
+        *state.dir.first_mut().unwrap() = state.dir.first().unwrap().move_(direction)?;
         if direction != DirPad::A {
             return Some(state);
         }
-        state.dir0 = state.dir0.move_(state.dir1)?;
-        if state.dir1 != DirPad::A {
-            return Some(state);
+        for i in 1..state.dir.len() {
+            state.dir[i] = state.dir[i].move_(state.dir[i - 1])?;
+            if state.dir[i - 1] != DirPad::A {
+                return Some(state);
+            }
         }
-        state.num = state.num.move_(state.dir0)?;
-        if state.dir0 != DirPad::A {
+        let last_dir = *state.dir.last().unwrap();
+        state.num = state.num.move_(last_dir)?;
+        if last_dir != DirPad::A {
             return Some(state);
         }
         Some(state)
