@@ -92,7 +92,7 @@ fn distances_from_start(race_track: &RaceTrack) -> FxHashMap<Point, usize> {
     while at != race_track.end {
         for neighbour in at.neighbours() {
             if neighbour != prev && race_track.get(neighbour) == Some(Location::Empty) {
-                distance = distance + 1;
+                distance += 1;
                 distances.insert(neighbour, distance);
                 prev = at;
                 at = neighbour;

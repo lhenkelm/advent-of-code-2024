@@ -1,3 +1,4 @@
+mod day21;
 extern crate aoc_runner;
 
 extern crate aoc_runner_derive;
