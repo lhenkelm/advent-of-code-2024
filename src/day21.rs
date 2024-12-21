@@ -26,13 +26,12 @@ fn part1(codes: &[([char; 4], u64); 5]) -> u64 {
         let mut code_len = 0;
         for &code in code_seq {
             let target_state = PadState::from_char(code);
-            dbg!(pad_state);
             let len =
                 len_shortest_path_between_states(pad_state, target_state, &mut path_len_cache);
             code_len += len;
             pad_state = target_state;
         }
-        total_complexity += dbg!(code_len) * dbg!(code_val);
+        total_complexity += code_len * code_val;
     }
     total_complexity
 }
