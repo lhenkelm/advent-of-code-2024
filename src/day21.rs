@@ -23,6 +23,128 @@ fn part2(input: &[([char; 4], u32); 5]) -> String {
     todo!()
 }
 
+struct PadState {
+    num: NumPad,
+    dir0: DirPad,
+    dir1: DirPad,
+}
+
+enum NumPad {
+    _0,
+    _1,
+    _2,
+    _3,
+    _4,
+    _5,
+    _6,
+    _7,
+    _8,
+    _9,
+    A,
+}
+
+impl NumPad {
+    fn move_(self, direction: DirPad) -> Option<Self> {
+        match (self, direction) {
+            (Self::_0, DirPad::Up) => Some(Self::_2),
+            (Self::_0, DirPad::Left) => None,
+            (Self::_0, DirPad::Right) => Some(Self::A),
+            (Self::_0, DirPad::Down) => None,
+            (Self::_0, DirPad::A) => Some(Self::_0),
+            (Self::_1, DirPad::Up) => Some(Self::_4),
+            (Self::_1, DirPad::Left) => None,
+            (Self::_1, DirPad::Right) => Some(Self::_2),
+            (Self::_1, DirPad::Down) => None,
+            (Self::_1, DirPad::A) => Some(Self::_1),
+            (Self::_2, DirPad::Up) => Some(Self::_5),
+            (Self::_2, DirPad::Left) => Some(Self::_1),
+            (Self::_2, DirPad::Right) => Some(Self::_3),
+            (Self::_2, DirPad::Down) => Some(Self::_0),
+            (Self::_2, DirPad::A) => Some(Self::_2),
+            (Self::_3, DirPad::Up) => Some(Self::_6),
+            (Self::_3, DirPad::Left) => Some(Self::_2),
+            (Self::_3, DirPad::Right) => None,
+            (Self::_3, DirPad::Down) => Some(Self::A),
+            (Self::_3, DirPad::A) => Some(Self::_3),
+            (Self::_4, DirPad::Up) => Some(Self::_7),
+            (Self::_4, DirPad::Left) => None,
+            (Self::_4, DirPad::Right) => Some(Self::_5),
+            (Self::_4, DirPad::Down) => Some(Self::_1),
+            (Self::_4, DirPad::A) => Some(Self::_4),
+            (Self::_5, DirPad::Up) => Some(Self::_8),
+            (Self::_5, DirPad::Left) => Some(Self::_4),
+            (Self::_5, DirPad::Right) => Some(Self::_6),
+            (Self::_5, DirPad::Down) => Some(Self::_2),
+            (Self::_5, DirPad::A) => Some(Self::_5),
+            (Self::_6, DirPad::Up) => Some(Self::_9),
+            (Self::_6, DirPad::Left) => Some(Self::_5),
+            (Self::_6, DirPad::Right) => None,
+            (Self::_6, DirPad::Down) => Some(Self::_3),
+            (Self::_6, DirPad::A) => Some(Self::_6),
+            (Self::_7, DirPad::Up) => None,
+            (Self::_7, DirPad::Left) => None,
+            (Self::_7, DirPad::Right) => Some(Self::_8),
+            (Self::_7, DirPad::Down) => Some(Self::_4),
+            (Self::_7, DirPad::A) => Some(Self::_7),
+            (Self::_8, DirPad::Up) => None,
+            (Self::_8, DirPad::Left) => Some(Self::_7),
+            (Self::_8, DirPad::Right) => Some(Self::_9),
+            (Self::_8, DirPad::Down) => Some(Self::_5),
+            (Self::_8, DirPad::A) => Some(Self::_8),
+            (Self::_9, DirPad::Up) => None,
+            (Self::_9, DirPad::Left) => Some(Self::_8),
+            (Self::_9, DirPad::Right) => None,
+            (Self::_9, DirPad::Down) => Some(Self::_6),
+            (Self::_9, DirPad::A) => Some(Self::_9),
+            (Self::A, DirPad::Up) => Some(Self::_3),
+            (Self::A, DirPad::Left) => Some(Self::_0),
+            (Self::A, DirPad::Right) => None,
+            (Self::A, DirPad::Down) => None,
+            (Self::A, DirPad::A) => Some(Self::A),
+        }
+    }
+}
+
+enum DirPad {
+    Up,
+    Down,
+    Left,
+    Right,
+    A,
+}
+
+impl DirPad {
+    fn move_(self, direction: DirPad) -> Option<Self> {
+        match (self, direction) {
+            (Self::Up, DirPad::Up) => None,
+            (Self::Up, DirPad::Left) => None,
+            (Self::Up, DirPad::Right) => Some(Self::A),
+            (Self::Up, DirPad::Down) => Some(Self::Down),
+            (Self::Up, DirPad::A) => Some(Self::Up),
+            (Self::Down, DirPad::Up) => Some(Self::Up),
+            (Self::Down, DirPad::Left) => Some(Self::Left),
+            (Self::Down, DirPad::Right) => Some(Self::Right),
+            (Self::Down, DirPad::Down) => None,
+            (Self::Down, DirPad::A) => Some(Self::Down),
+            (Self::Left, DirPad::Up) => None,
+            (Self::Left, DirPad::Left) => None,
+            (Self::Left, DirPad::Right) => Some(Self::Down),
+            (Self::Left, DirPad::Down) => None,
+            (Self::Left, DirPad::A) => Some(Self::Left),
+            (Self::Right, DirPad::Up) => Some(Self::A),
+            (Self::Right, DirPad::Left) => Some(Self::Down),
+            (Self::Right, DirPad::Right) => None,
+            (Self::Right, DirPad::Down) => None,
+            (Self::Right, DirPad::A) => Some(Self::Right),
+            (Self::A, DirPad::Up) => None,
+            (Self::A, DirPad::Left) => Some(Self::Up),
+            (Self::A, DirPad::Right) => None,
+            (Self::A, DirPad::Down) => Some(Self::Right),
+            (Self::A, DirPad::A) => Some(Self::A),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
