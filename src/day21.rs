@@ -1,6 +1,10 @@
+use std::collections::VecDeque;
+
 use aoc_runner_derive::{aoc, aoc_generator};
+use rustc_hash::{FxHashMap, FxHashSet};
+
 #[aoc_generator(day21)]
-fn parse(input: &str) -> [([char; 4], u32); 5] {
+fn parse(input: &str) -> [([char; 4], u64); 5] {
     let input = input.trim().replace("\r\n", "\n");
     let mut parsed = [([' '; 4], 0); 5];
     for (i, line) in input.lines().enumerate() {
@@ -14,16 +18,64 @@ fn parse(input: &str) -> [([char; 4], u32); 5] {
 }
 
 #[aoc(day21, part1)]
-fn part1(codes: &[([char; 4], u32); 5]) -> u64 {
-    let mut pad = PadState::new();
-    todo!()
+fn part1(codes: &[([char; 4], u64); 5]) -> u64 {
+    let mut path_len_cache = FxHashMap::default();
+    let mut total_complexity = 0;
+    for (code_seq, code_val) in codes {
+        let mut pad_state = PadState::new();
+        let mut code_len = 0;
+        for &code in code_seq {
+            let target_state = PadState::from_char(code);
+            let len =
+                len_shortest_path_between_states(pad_state, target_state, &mut path_len_cache);
+            code_len += len;
+            pad_state = target_state;
+        }
+        total_complexity += dbg!(code_len) * dbg!(code_val);
+    }
+    total_complexity
 }
 
 #[aoc(day21, part2)]
-fn part2(input: &[([char; 4], u32); 5]) -> String {
+fn part2(input: &[([char; 4], u64); 5]) -> String {
     todo!()
 }
 
+fn len_shortest_path_between_states(
+    from: PadState,
+    to: PadState,
+    cache: &mut FxHashMap<(PadState, PadState), u64>,
+) -> u64 {
+    let mut queue = VecDeque::new();
+    queue.push_back((from, 0));
+    for (state, len) in cache.iter() {
+        if state.0 == from {
+            queue.push_back((state.1, *len));
+        }
+    }
+    while let Some((state, len)) = queue.pop_front() {
+        if state == to {
+            return len;
+        }
+        cache.insert((from, state), len);
+        for direction in [
+            DirPad::Up,
+            DirPad::Down,
+            DirPad::Left,
+            DirPad::Right,
+            DirPad::A,
+        ] {
+            if let Some(next_state) = state.press(direction) {
+                if cache.contains_key(&(from, next_state)) {
+                    continue;
+                }
+                queue.push_back((next_state, len + 1));
+            }
+        }
+    }
+    panic!("No path found");
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct PadState {
     num: NumPad,
     dir0: DirPad,
@@ -34,6 +86,14 @@ impl PadState {
     fn new() -> Self {
         Self {
             num: NumPad::A,
+            dir0: DirPad::A,
+            dir1: DirPad::A,
+        }
+    }
+
+    fn from_char(ch: char) -> Self {
+        PadState {
+            num: NumPad::from_char(ch),
             dir0: DirPad::A,
             dir1: DirPad::A,
         }
@@ -57,7 +117,7 @@ impl PadState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum NumPad {
     _0,
     _1,
@@ -73,6 +133,23 @@ enum NumPad {
 }
 
 impl NumPad {
+    fn from_char(ch: char) -> Self {
+        match ch {
+            '0' => Self::_0,
+            '1' => Self::_1,
+            '2' => Self::_2,
+            '3' => Self::_3,
+            '4' => Self::_4,
+            '5' => Self::_5,
+            '6' => Self::_6,
+            '7' => Self::_7,
+            '8' => Self::_8,
+            '9' => Self::_9,
+            'A' => Self::A,
+            _ => panic!("Invalid char"),
+        }
+    }
+
     fn move_(self, direction: DirPad) -> Option<Self> {
         match (self, direction) {
             (Self::_0, DirPad::Up) => Some(Self::_2),
@@ -134,7 +211,7 @@ impl NumPad {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum DirPad {
     Up,
     Down,
