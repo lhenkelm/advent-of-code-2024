@@ -15,6 +15,7 @@ fn parse(input: &str) -> [([char; 4], u32); 5] {
 
 #[aoc(day21, part1)]
 fn part1(codes: &[([char; 4], u32); 5]) -> u64 {
+    let mut pad = PadState::new();
     todo!()
 }
 
@@ -29,6 +30,34 @@ struct PadState {
     dir1: DirPad,
 }
 
+impl PadState {
+    fn new() -> Self {
+        Self {
+            num: NumPad::A,
+            dir0: DirPad::A,
+            dir1: DirPad::A,
+        }
+    }
+
+    fn press(self, direction: DirPad) -> Option<PadState> {
+        let mut state = self;
+        state.dir1 = state.dir1.move_(direction)?;
+        if direction != DirPad::A {
+            return Some(state);
+        }
+        state.dir0 = state.dir0.move_(state.dir1)?;
+        if state.dir1 != DirPad::A {
+            return Some(state);
+        }
+        state.num = state.num.move_(state.dir0)?;
+        if state.dir0 != DirPad::A {
+            return Some(state);
+        }
+        Some(state)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum NumPad {
     _0,
     _1,
@@ -105,6 +134,7 @@ impl NumPad {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DirPad {
     Up,
     Down,
