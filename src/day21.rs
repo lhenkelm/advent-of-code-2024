@@ -4,6 +4,7 @@ use std::iter;
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
+use memoize::memoize;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 #[aoc_generator(day21)]
@@ -42,7 +43,7 @@ fn part1(codes: &[([char; 4], u64); 5]) -> u64 {
 
 #[aoc(day21, part2)]
 fn part2(input: &[([char; 4], u64); 5]) -> u64 {
-    const N_DIR_PAD_ROBOTS: usize = 4;
+    const N_DIR_PAD_ROBOTS: usize = 5;
 
     // 1) Find shortest path (not its length) between all immediately connected pairs
     // of a NumPad and its nearest DirPad, in terms of the button presses required from the direction
@@ -176,7 +177,6 @@ fn part2(input: &[([char; 4], u64); 5]) -> u64 {
         }
     }
     let shortest_paths_dirpad = shortest_paths_dirpad;
-    println!("Example best dirpad paths:");
     for (ft, tt) in [
         (DirPad::A, DirPad::A),
         (DirPad::A, DirPad::Up),
@@ -201,28 +201,56 @@ fn part2(input: &[([char; 4], u64); 5]) -> u64 {
         for &code in code_seq {
             let target_state = PadState::from_char(code, N_DIR_PAD_ROBOTS);
             let mut path = shortest_paths_numpad[&(pad_state.num, target_state.num)].clone();
-            for _ in 0..N_DIR_PAD_ROBOTS {
-                let new_path = iter::once(DirPad::A)
-                    .chain(path.into_iter())
-                    .tuple_windows()
-                    .flat_map(|(from_dir, to_dir)| {
-                        shortest_paths_dirpad[&(from_dir, to_dir)].clone()
-                    })
-                    .collect();
-                path = new_path;
-            }
-            if N_DIR_PAD_ROBOTS < 5 {
+            let deep_len = length_of_path_n_robots_deep(
+                path.clone(),
+                N_DIR_PAD_ROBOTS,
+                &shortest_paths_dirpad,
+            );
+            if N_DIR_PAD_ROBOTS < 6 {
+                for _ in 0..N_DIR_PAD_ROBOTS {
+                    let new_path = iter::once(DirPad::A)
+                        .chain(path.into_iter())
+                        .tuple_windows()
+                        .flat_map(|(from_dir, to_dir)| {
+                            shortest_paths_dirpad[&(from_dir, to_dir)].clone()
+                        })
+                        .collect();
+                    path = new_path;
+                }
                 println!("path: {}", path.iter().format(""));
                 for direction in path.iter() {
                     pad_state = pad_state.press(*direction).unwrap();
                 }
                 assert_eq!(pad_state, target_state);
+                assert_eq!(path.len(), deep_len);
             }
-            code_complexity += path.len() as u64;
+            code_complexity += deep_len as u64;
         }
         total_complexity += code_complexity * code_val;
     }
     total_complexity
+}
+
+#[memoize(Ignore: shortest_paths_dirpad)]
+fn length_of_path_n_robots_deep(
+    path: Vec<DirPad>,
+    n: usize,
+    shortest_paths_dirpad: &FxHashMap<(DirPad, DirPad), Vec<DirPad>>,
+) -> usize {
+    if n == 0 {
+        return path.len();
+    }
+    iter::once(DirPad::A)
+        .chain(path.iter().copied())
+        .tuple_windows()
+        .map(|(from_dir, to_dir)| {
+            length_of_path_n_robots_deep(
+                shortest_paths_dirpad[&(from_dir, to_dir)].clone(),
+                n - 1,
+                shortest_paths_dirpad,
+            )
+        })
+        .sum()
 }
 
 fn len_shortest_path_between_states(
